@@ -80,6 +80,14 @@ namespace MyRhinoPlugin1.commands
             }
 
                 doc.Views.Redraw();
+
+            foreach (var v in doc.Views.GetViewList(true, false))
+            {
+                v.ActiveViewport.ZoomExtents();
+                v.Redraw();
+            }
+
+          
             return Result.Success;
         }
 
