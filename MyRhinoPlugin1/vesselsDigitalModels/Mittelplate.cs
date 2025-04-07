@@ -5,10 +5,13 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Rhino;
+using Rhino.DocObjects;
 using Rhino.Geometry;
+using MyRhinoPlugin1.models;
+
 namespace MyRhinoPlugin1.vesselsDigitalModels
 {
-    internal class Mittelplate
+    public class Mittelplate
     {
 
         public Point3d APPoint { get; set; }
@@ -31,8 +34,22 @@ namespace MyRhinoPlugin1.vesselsDigitalModels
         public Brep FWRObliquePS { get; set; }
         public Brep FWRObliqueSB { get; set; }
 
-        public List<Brep> TDs { get; set; }
+        public List<TDModel> TDList { get; set; }
 
+        public double TDAltitudeLowerPosition { get; set; }
+        public double TDAltitudeUpperPosition { get; set; }
+
+        public  double standartLength { get; set; }
+        public  double standartWidth { get; set; }
+        public  double standartHeight { get; set; }
+        public  double TD1Length { get; set; }
+        public double TD1Width { get; set; }
+        public double TDA_TD1 { get; set; }
+        public double TDB_TD1 { get; set; }
+        public double TDA_TD2 { get; set; }
+        public double TDB_TD2 { get; set; }
+        public double firstOffset { get; set; }
+        public  double offset { get; set; }
 
         public List<Brep> VesselElements { get; set; }
 
@@ -57,10 +74,24 @@ namespace MyRhinoPlugin1.vesselsDigitalModels
             FWRObliquePS = extrusion.ToBrep(true);
             extrusion = Extrusion.Create(drawFWROblique(7425, 2800, CargoHoldHeight, "SB"), CargoHoldHeight, true);
             FWRObliqueSB = extrusion.ToBrep(true);
+            // TDs
+            standartLength = 4200;
+            standartWidth = 10100;
+            standartHeight = 400;
+            TD1Length = 4380;
+            TD1Width = 7877;
+            TDA_TD1 = 0;
+            TDB_TD1 = 1654;
+            TDA_TD2 = 1271;
+            TDB_TD2 = 1106;
+            TDAltitudeLowerPosition = 3980;
+            TDAltitudeUpperPosition = 4070;
+            firstOffset = 36;
+            offset = 15;
 
             // Create a list of Brep objects for the TDs
 
-            TDs = tdCreator();
+            TDList = tdCreator();
 
             VesselElements = new List<Brep>
             {
@@ -69,150 +100,55 @@ namespace MyRhinoPlugin1.vesselsDigitalModels
                 FWRObliquePS,
                 FWRObliqueSB
             };
-
+        
         }
 
 
-        private List<Brep> tdCreator()
+        private List<TDModel> tdCreator()
         {
+            Point3d InitialTSPosotion = new Point3d(
+            CargoHoldBasePont.X + firstOffset,
+            -CargoHoldWidth / 2,
+            CargoHoldBasePont.Z + TDAltitudeLowerPosition
+        );
+            List<TDModel> TDCollection = new List<TDModel>();
 
-            List<Brep> TDCollection = new List<Brep>();
+            TDCollection.Add(new TDModel("TD_1", TD1Length, TD1Width, standartHeight, TDA_TD1, TDB_TD1, TDAltitudeLowerPosition, TDAltitudeUpperPosition)); // i = 0
+            TDCollection.Add(new TDModel("TD_2", standartLength, standartWidth, standartHeight, TDA_TD2, TDB_TD2, TDAltitudeLowerPosition, TDAltitudeUpperPosition)); // i = 1
+            TDCollection.Add(new TDModel("TD_3", standartLength, standartWidth, standartHeight, 0, 0, TDAltitudeLowerPosition, TDAltitudeUpperPosition)); // i = 2
+            TDCollection.Add(new TDModel("TD_4", standartLength, standartWidth, standartHeight, 0, 0, TDAltitudeLowerPosition, TDAltitudeUpperPosition)); // i = 3
+            TDCollection.Add(new TDModel("TD_5", standartLength, standartWidth, standartHeight, 0, 0, TDAltitudeLowerPosition, TDAltitudeUpperPosition)); // i = 4
+            TDCollection.Add(new TDModel("TD_6", standartLength, standartWidth, standartHeight, 0, 0, TDAltitudeLowerPosition, TDAltitudeUpperPosition)); // i = 5
+            TDCollection.Add(new TDModel("TD_7", standartLength, standartWidth, standartHeight, 0, 0, TDAltitudeLowerPosition, TDAltitudeUpperPosition)); // i = 6
+            TDCollection.Add(new TDModel("TD_8", standartLength, standartWidth, standartHeight, 0, 0, TDAltitudeLowerPosition, TDAltitudeUpperPosition)); // i = 7
+            TDCollection.Add(new TDModel("TD_9", standartLength, standartWidth, standartHeight, 0, 0, TDAltitudeLowerPosition, TDAltitudeUpperPosition)); // i = 8
+            TDCollection.Add(new TDModel("TD_10", standartLength, standartWidth, standartHeight, 0, 0, TDAltitudeLowerPosition, TDAltitudeUpperPosition)); // i = 9
+            TDCollection.Add(new TDModel("TD_11", standartLength, standartWidth, standartHeight, 0, 0, TDAltitudeLowerPosition, TDAltitudeUpperPosition)); // i = 10
+            TDCollection.Add(new TDModel("TD_12", standartLength, standartWidth, standartHeight, 0, 0, TDAltitudeLowerPosition, TDAltitudeUpperPosition)); // i = 11
+            TDCollection.Add(new TDModel("TD_13", standartLength, standartWidth, standartHeight, 0, 0, TDAltitudeLowerPosition, TDAltitudeUpperPosition)); // i = 12
+            TDCollection.Add(new TDModel("TD_14", standartLength, standartWidth, standartHeight, 0, 0, TDAltitudeLowerPosition, TDAltitudeUpperPosition)); // i = 13
 
-            double length = 4200;
-            double width = 10100;
-            double height = 400;
+ 
 
-            double firstOffset = 36;
-            double offset = 15;
-            double TDAltitudeLowerPosition = 3980;
-
-            int TDStandartCount = 13; // Number of TDs to create from 3 to 14
-
-
-            Point3d baseOrigin = new Point3d(
-                CargoHoldBasePont.X + firstOffset,
-                -CargoHoldWidth / 2, 
-                CargoHoldBasePont.Z + TDAltitudeLowerPosition
-            );
-
-            double tempXposition = 0;
-            for (int i = 0; i <= TDStandartCount-2; i++) // TDs 3-14
+            // set the position points
+            TDCollection[13].LocationOfPosition = new Point3d(InitialTSPosotion.X, InitialTSPosotion.Y, InitialTSPosotion.Z);
+            for (int i = 12; i >= 0; i--) // 12 ... 0
             {
-                    // Adjusted base point for TDs
-                    baseOrigin = new Point3d(
-                        CargoHoldBasePont.X + (length + offset) * i,
-                        -CargoHoldWidth / 2, 
-                        CargoHoldBasePont.Z + TDAltitudeLowerPosition
-                    );
-                // Create the TD and add it to the collection
-                TDCollection.Add(drawStandartTD(baseOrigin, length, width, height));
-                tempXposition = baseOrigin.X;
+                if (TDCollection[i].Width == TDCollection[i + 1].Width)
+                {
+                    TDCollection[i].LocationOfPosition =
+                  new Point3d(TDCollection[i + 1].LocationOfPosition.X + standartLength + offset, InitialTSPosotion.Y, InitialTSPosotion.Z);
+                }
+                else
+                {
+                    double delta = TDCollection[i + 1].Width - TDCollection[i].Width;
+                    TDCollection[i].LocationOfPosition =
+                 new Point3d(TDCollection[i + 1].LocationOfPosition.X + standartLength + offset, InitialTSPosotion.Y + delta/2, InitialTSPosotion.Z);
+                }  
             }
-            // create the TD#2
-            baseOrigin = new Point3d(
-                 tempXposition + length + offset,
-                 -CargoHoldWidth / 2, 
-                 CargoHoldBasePont.Z + TDAltitudeLowerPosition
-             );
-            double TDA = 2929;
-            double TDB = 1106;
-            TDCollection.Add(drawNotStandartTD(baseOrigin, length, width, height, TDA, TDB));
-            tempXposition = baseOrigin.X;
-
-            // create the TD#1
-            double TD1Length = 4380;
-            double TD1Width = 7877;
-             TDA = 4380;
-             TDB = 1654;
-            double TD1WidthDelta = width - TD1Width;
-
-            baseOrigin = new Point3d(
-              tempXposition + length + offset,
-              -CargoHoldWidth / 2 + TD1WidthDelta/2, 
-              CargoHoldBasePont.Z + TDAltitudeLowerPosition
-          );
-            TDCollection.Add(drawNotStandartTD(baseOrigin, TD1Length, TD1Width, height, TDA, TDB));
 
             return TDCollection;
-
         }
-
-                 // TDs 2
-
-
-            
-        
-        private Brep drawStandartTD(Point3d baseOrigin, double length, double width, double height)
-        {
-            // Define min and max points
-            Point3d minPoint = baseOrigin;
-            Point3d maxPoint = new Point3d(
-                baseOrigin.X + length,
-                baseOrigin.Y + width,
-                baseOrigin.Z + height
-            );
-            // Create BoundingBox
-            BoundingBox bbox = new BoundingBox(minPoint, maxPoint);
-            // Convert BoundingBox to Brep
-            return Brep.CreateFromBox(bbox);
-        }
-
-        private Brep drawNotStandartTD(Point3d baseOrigin, double length, double width, double height, double a, double b)
-        {
-            // Step 1: Create the main box
-
-            // Define min and max points
-            Point3d minPoint = baseOrigin;
-            Point3d maxPoint = new Point3d(
-                baseOrigin.X + length,
-                baseOrigin.Y + width,
-                baseOrigin.Z + height
-            );
-            // Create BoundingBox
-            BoundingBox bbox = new BoundingBox(minPoint, maxPoint);
-            Brep boxBrep = Brep.CreateFromBox(bbox);
-            if (boxBrep == null)
-                return null; // Fail-safe check
-
-            // Step 2: Define the triangular prism (cut-out shape)
-            Point3d point1 = maxPoint;  // Top-right corner of the box
-            Point3d point2 = new Point3d(maxPoint.X - a, maxPoint.Y, maxPoint.Z);
-            Point3d point3 = new Point3d(maxPoint.X, maxPoint.Y - b, maxPoint.Z);
-            Point3d ExtraPoint = new Point3d(maxPoint.X+100, maxPoint.Y, maxPoint.Z);
-            Point3d mirroredPoint1 = new Point3d(maxPoint.X, maxPoint.Y - width, maxPoint.Z);  // Opposite top-left corner
-            Point3d mirroredPoint2 = new Point3d(maxPoint.X - a, maxPoint.Y - width, maxPoint.Z);
-            Point3d mirroredPoint3 = new Point3d(maxPoint.X, maxPoint.Y - width + b, maxPoint.Z);
-            Point3d mirroredExtraPoint = new Point3d(maxPoint.X + 100, maxPoint.Y - width, maxPoint.Z);
-
-            PolylineCurve triangle = new PolylineCurve(new[] { point1, ExtraPoint, mirroredExtraPoint, mirroredPoint1, mirroredPoint2, mirroredPoint3, point3, point2, point1 });
-
-            // Step 3: Extrude the triangle downwards by -height
-            Vector3d extrusionVector = new Vector3d(0, 0, -height);
-            Brep prismBrep1 = Extrusion.Create(triangle, -height, true)?.ToBrep();
-
-            if (prismBrep1 == null)
-                return boxBrep; // Fail-safe: return just the box if prism creation fails
-
- 
-
-
-           
- 
-           
-            // Step 5: Perform Boolean Difference (subtract both prisms)
-            Brep[] firstCut = Brep.CreateBooleanDifference(boxBrep, prismBrep1, RhinoDoc.ActiveDoc.ModelAbsoluteTolerance);
-            if (firstCut == null || firstCut.Length == 0)
-            {
-                RhinoApp.WriteLine("Error: First Boolean Difference failed.");
-                return boxBrep;
-            }
-
- 
-
-
-            return firstCut[0]; // Return the modified box
-        }
-
 
 
         private Brep drawFuelTank(Boolean PSSB)
@@ -231,7 +167,8 @@ namespace MyRhinoPlugin1.vesselsDigitalModels
                );
             }
 
-            else {
+            else
+            {
 
                 // Adjusted base point for FuelTankPS
                 baseOrigin = new Point3d(
@@ -258,7 +195,7 @@ namespace MyRhinoPlugin1.vesselsDigitalModels
 
 
 
-        private PolylineCurve drawFWROblique(double l, double w, double h, String SBPS )
+        private PolylineCurve drawFWROblique(double l, double w, double h, String SBPS)
         {
             Point3d pointA = new Point3d();
             Point3d pointB = new Point3d();
@@ -267,48 +204,48 @@ namespace MyRhinoPlugin1.vesselsDigitalModels
             if (SBPS.Equals("PS"))
             {
                 // Adjusted base points 
-                  pointA = new Point3d(
-                    CargoHoldBasePont.X + CargoHoldLength - l,
-                    (CargoHoldWidth / 2), 
-                   CargoHoldBasePont.Z
-                );
+                pointA = new Point3d(
+                  CargoHoldBasePont.X + CargoHoldLength - l,
+                  (CargoHoldWidth / 2),
+                 CargoHoldBasePont.Z
+              );
 
-                 pointB = new Point3d(
-                    CargoHoldBasePont.X + CargoHoldLength,
-                    (CargoHoldWidth / 2), 
-                   CargoHoldBasePont.Z
-                );
-                 pointC = new Point3d(
-                    CargoHoldBasePont.X + CargoHoldLength,
-                    (CargoHoldWidth / 2) - w,
-                   CargoHoldBasePont.Z
-                );
+                pointB = new Point3d(
+                   CargoHoldBasePont.X + CargoHoldLength,
+                   (CargoHoldWidth / 2),
+                  CargoHoldBasePont.Z
+               );
+                pointC = new Point3d(
+                   CargoHoldBasePont.X + CargoHoldLength,
+                   (CargoHoldWidth / 2) - w,
+                  CargoHoldBasePont.Z
+               );
             }
             else if (SBPS.Equals("SB"))
             {
                 // Adjusted base points 
-                 pointA = new Point3d(
-                    CargoHoldBasePont.X + CargoHoldLength - l,
-                    -(CargoHoldWidth / 2),
-                   CargoHoldBasePont.Z
-                );
-                 pointB = new Point3d(
-                    CargoHoldBasePont.X + CargoHoldLength,
-                    -(CargoHoldWidth / 2), 
-                   CargoHoldBasePont.Z
-                );
-                 pointC = new Point3d(
-                    CargoHoldBasePont.X + CargoHoldLength,
-                    -(CargoHoldWidth / 2) + w,
-                   CargoHoldBasePont.Z
-                );
+                pointA = new Point3d(
+                   CargoHoldBasePont.X + CargoHoldLength - l,
+                   -(CargoHoldWidth / 2),
+                  CargoHoldBasePont.Z
+               );
+                pointB = new Point3d(
+                   CargoHoldBasePont.X + CargoHoldLength,
+                   -(CargoHoldWidth / 2),
+                  CargoHoldBasePont.Z
+               );
+                pointC = new Point3d(
+                   CargoHoldBasePont.X + CargoHoldLength,
+                   -(CargoHoldWidth / 2) + w,
+                  CargoHoldBasePont.Z
+               );
             }
 
 
             // Create the base triangle as a PolylineCurve
             PolylineCurve baseTriangle = new PolylineCurve(new[] { pointA, pointB, pointC, pointA });
             return baseTriangle;
-           
+
         }
     }
 }

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using Eto.Forms;
+using MyRhinoPlugin1.models;
 using MyRhinoPlugin1.vesselsDigitalModels;
 using Rhino;
 using Rhino.Commands;
@@ -11,6 +12,7 @@ using Rhino.Input;
 using Rhino.Input.Custom;
 using Rhino.Render.CustomRenderMeshes;
 using Rhino.UI;
+using MyRhinoPlugin1.models;
 
 
 namespace MyRhinoPlugin1.commands
@@ -49,7 +51,7 @@ namespace MyRhinoPlugin1.commands
 
             // Create the "vesselConstruction" layer if it doesn't exist
             string layerName = "vesselConstruction";
-            Layer vesselLayer = GetOrCreateLayer(doc, layerName);
+            Layer vesselLayer = utilites.LayerService.GetOrCreateLayer(doc, layerName);
             // Set the layer visibility to off
             vesselLayer.IsVisible = true;
             vesselLayer.IsLocked = true; 
@@ -74,12 +76,10 @@ namespace MyRhinoPlugin1.commands
                 }
             }
 
-            foreach (Brep brep in mittelplate.TDs)
-            {
-                doc.Objects.AddBrep(brep);   
-            }
 
-                doc.Views.Redraw();
+
+ 
+
 
             foreach (var v in doc.Views.GetViewList(true, false))
             {
@@ -87,26 +87,37 @@ namespace MyRhinoPlugin1.commands
                 v.Redraw();
             }
 
-          
+
+            // Create the "vesselConstruction" layer if it doesn't exist
+            string layerTDName = "TD";
+            Layer vesselTDLayer = utilites.LayerService.GetOrCreateLayer(doc, layerTDName);
+            // Set the layer visibility to off
+            vesselTDLayer.IsVisible = true;
+            vesselTDLayer.IsLocked = true;
+            List<Brep> TDList = new List<Brep>();
+            TDObjectCreator tDObjectCreator = new TDObjectCreator();
+            TDList = tDObjectCreator.TDCreator(mittelplate.TDList);
+            
+            foreach(var tD in TDList)
+            {
+                // Add the Brep to the document and get the Guid of the object
+                Guid objGuid = doc.Objects.AddBrep(tD);
+                // Get the RhinoObject associated with the Guid
+                RhinoObject obj = doc.Objects.Find(objGuid);
+                if (obj != null)
+                {
+                    // Assign the Brep to the "vesselConstruction" layer
+                    obj.Attributes.LayerIndex = vesselTDLayer.Index;
+                    // Commit changes to the object
+                    obj.CommitChanges();
+                }
+            } 
+
+            doc.Views.Redraw();
             return Result.Success;
         }
 
-        // Method to get or create the "vesselConstruction" layer
-        private Layer GetOrCreateLayer(RhinoDoc doc, string layerName)
-        {
-            // Search for the existing layer by name
-            Layer layer = doc.Layers.FindName(layerName);
-
-            if (layer == null)
-            {
-                // If the layer doesn't exist, create a new one
-                layer = new Layer { Name = layerName };
-                doc.Layers.Add(layer);
-            }
-
-            return layer;
-        }
-
+    
 
         // Method to generate vessel geometry (Brep) and perform Boolean difference
         private Brep[] GenerateVesselGeometry(RhinoDoc doc, RunMode mode)
