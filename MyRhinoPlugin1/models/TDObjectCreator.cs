@@ -12,9 +12,9 @@ namespace MyRhinoPlugin1.models
     public class TDObjectCreator
     {
 
-        public List<Brep> TDCreator(List<TDModel> TDList)
+        public List<TDModel> TDBrepCreator(List<TDModel> TDList)
         {
-            List < Brep > TDCollecttion = new List<Brep>();
+            List <TDModel> TDCollecttion = new List<TDModel>();
 
             foreach (TDModel model in TDList)
             {
@@ -31,12 +31,15 @@ namespace MyRhinoPlugin1.models
                     BoundingBox bbox = new BoundingBox(minPoint, maxPoint);
                     // Convert BoundingBox to Brep
                     model.TDModelBrep = Brep.CreateFromBox(bbox);
-                    if (model.TDModelBrep != null) TDCollecttion.Add(model.TDModelBrep);
+                    TDCollecttion.Add(model);
+
+
                 }
                 else
                 {
                     Brep TDNonSt = createNotStandartTD(model);
-                    if (TDNonSt != null) TDCollecttion.Add(TDNonSt);
+                    if (TDNonSt != null) model.TDModelBrep = TDNonSt;
+                    TDCollecttion.Add(model);
                 } 
             }
             return TDCollecttion;

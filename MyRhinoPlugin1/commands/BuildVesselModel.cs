@@ -1,18 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using Eto.Forms;
+ 
 using MyRhinoPlugin1.models;
 using MyRhinoPlugin1.vesselsDigitalModels;
 using Rhino;
 using Rhino.Commands;
 using Rhino.DocObjects;
 using Rhino.Geometry;
-using Rhino.Input;
-using Rhino.Input.Custom;
-using Rhino.Render.CustomRenderMeshes;
-using Rhino.UI;
-using MyRhinoPlugin1.models;
+ 
 
 
 namespace MyRhinoPlugin1.commands
@@ -55,7 +50,6 @@ namespace MyRhinoPlugin1.commands
             // Set the layer visibility to off
             vesselLayer.IsVisible = true;
             vesselLayer.IsLocked = true; 
-            //doc.Layers.Modify(vesselLayer, vesselLayer.Index, true);
 
             // Add the final unioned Brep(s) to the document, assign them to the new layer
             foreach (Brep brep in finalBrepResult)
@@ -68,11 +62,23 @@ namespace MyRhinoPlugin1.commands
 
                 if (obj != null)
                 {
+                    Layer vesselConstructionTemp = doc.Layers.FindName("vesselConstruction");
+
                     // Assign the Brep to the "vesselConstruction" layer
-                    obj.Attributes.LayerIndex = vesselLayer.Index;
+                    obj.Attributes.LayerIndex = vesselConstructionTemp.Index;
+                    obj.Attributes.Name = "vesselConstruction";
+                    vesselConstructionTemp.IsLocked = true;
+    
 
                     // Commit changes to the object
                     obj.CommitChanges();
+
+                    /*
+                  
+                    // Commit changes to the object
+                    doc.Views.Redraw();
+                    RhinoDoc.ActiveDoc.Views.Redraw();*/
+
                 }
             }
 
@@ -94,26 +100,29 @@ namespace MyRhinoPlugin1.commands
             // Set the layer visibility to off
             vesselTDLayer.IsVisible = true;
             vesselTDLayer.IsLocked = true;
-            List<Brep> TDList = new List<Brep>();
+            List<TDModel> TDList = new List<TDModel>();
             TDObjectCreator tDObjectCreator = new TDObjectCreator();
-            TDList = tDObjectCreator.TDCreator(mittelplate.TDList);
+            TDList = tDObjectCreator.TDBrepCreator(mittelplate.TDList);
             
             foreach(var tD in TDList)
             {
                 // Add the Brep to the document and get the Guid of the object
-                Guid objGuid = doc.Objects.AddBrep(tD);
+                Guid objGuid = doc.Objects.AddBrep(tD.TDModelBrep);
                 // Get the RhinoObject associated with the Guid
                 RhinoObject obj = doc.Objects.Find(objGuid);
                 if (obj != null)
                 {
-                    // Assign the Brep to the "vesselConstruction" layer
-                    obj.Attributes.LayerIndex = vesselTDLayer.Index;
+                    // Get the layer index of the "TD" layer
+                    Layer vesselTDLayerTemp = doc.Layers.FindName("TD");
+                    // Assign the Brep to the "TD" layer
+                    obj.Attributes.LayerIndex = vesselTDLayerTemp.Index;
+                    obj.Attributes.Name = tD.Name;
                     // Commit changes to the object
                     obj.CommitChanges();
+                    doc.Views.Redraw();
+                    RhinoDoc.ActiveDoc.Views.Redraw();
                 }
-            } 
-
-            doc.Views.Redraw();
+            }
             return Result.Success;
         }
 

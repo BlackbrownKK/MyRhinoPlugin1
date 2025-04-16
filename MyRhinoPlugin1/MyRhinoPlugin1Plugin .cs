@@ -23,10 +23,7 @@ namespace MyRhinoPlugin1
         public static MyRhinoPlugin1Plugin Instance { get; private set; }
 
         protected override LoadReturnCode OnLoad(ref string errorMessage)
-        {
-            // Register the UI panel with Eto.Drawing.SystemIcons (cross-platform)
-            
-            Panels.RegisterPanel(this, typeof(BuildModelPanel), "Build Model", SystemIcons.Information);
+        { 
             return LoadReturnCode.Success;
         }
     }

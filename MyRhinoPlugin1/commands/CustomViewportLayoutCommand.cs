@@ -12,14 +12,18 @@ namespace MyRhinoPlugin1.commands
 {
     public class CustomViewportLayoutCommand : Command
     {
-        public override string EnglishName => "CustomViews";
-        private List<RhinoViewport> viewports;
+        public override string EnglishName => "CustomViews"; 
 
 
         protected override Result RunCommand(RhinoDoc doc, RunMode mode)
         {
+
+                
+
             // Reset to 4-view layout
             RhinoApp.RunScript("_4View _Enter", false);
+
+            CustomViewsMAkerker(doc);
 
             // Get list of views
             var views = doc.Views.GetViewList(true, false);
@@ -52,6 +56,11 @@ namespace MyRhinoPlugin1.commands
 
 
             return Result.Success;
+        }
+
+        private object CustomViewsMAkerker(RhinoDoc doc)
+        {
+            throw new NotImplementedException();
         }
     }
 }

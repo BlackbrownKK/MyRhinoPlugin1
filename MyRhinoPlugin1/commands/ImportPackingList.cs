@@ -1,15 +1,17 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using Eto.Forms;
 using Rhino;
 using Rhino.Commands;
 using Rhino.DocObjects;
 using Rhino.Geometry;
 
- 
+
 
 namespace MyRhinoPlugin1.commands
 {
-    public class ImportPackingList : Command
+    public class ImportPackingList : Rhino.Commands.Command
     {
         public ImportPackingList()
         {
@@ -36,14 +38,14 @@ namespace MyRhinoPlugin1.commands
             };
 
             // Show the dialog and check if a file was selected
-            if (openFileDialog.ShowOpenDialog() == false) 
+            if (openFileDialog.ShowOpenDialog() == false)
             {
                 RhinoApp.WriteLine("No file selected.");
                 return Result.Cancel;
             }
-          
+
             string filePath = openFileDialog.FileName;
-             ImportController importController = new ImportController(filePath);
+            ImportController importController = new ImportController(filePath);
 
             List<models.CargoModel> cargoList = importController.CargoList;
             // print debug writeline this cargoList
@@ -87,6 +89,13 @@ namespace MyRhinoPlugin1.commands
                 doc.Layers.Add(cargoLayer);
             }
             // Add the cargo Breps to the document and assign them to the new layer
+
+            RhinoApp.RunScript("_New", false);
+            foreach (Brep cargoBrep in cargoCollection)
+            {
+                RhinoDoc.ActiveDoc.Objects.Add(cargoBrep);
+                RhinoDoc.ActiveDoc.Views.Redraw();
+            }
             foreach (Brep cargoBrep in cargoCollection)
             {
                 // Add the Brep to the document and get the Guid of the object
@@ -106,6 +115,7 @@ namespace MyRhinoPlugin1.commands
             RhinoApp.WriteLine("Packing list imported successfully.");
             return Result.Success;
         }
-
     }
 }
+
+
