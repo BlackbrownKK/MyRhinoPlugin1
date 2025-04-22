@@ -96,10 +96,19 @@ namespace MyRhinoPlugin1.userInterface
                 Rhino.RhinoApp.RunScript("ImportPackingList", false);
             };
 
+
+            var moveTDButton = new Button { Text = "Move All TDs Down" };
+            moveTDButton.Click += (sender, e) =>
+            {
+                Rhino.RhinoApp.RunScript("MoveAllTDToLowerPosition", false);
+            };
+
+
             // Layout
             var layout = new DynamicLayout { Padding = 10, Spacing = new Size(5, 5) };
             layout.Add(drawable);
             layout.Add(label);
+            layout.AddSeparateRow(moveTDButton);
             layout.AddSeparateRow(buildModelButton, importPackingListButton);
 
             Content = layout;

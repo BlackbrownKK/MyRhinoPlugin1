@@ -17,13 +17,18 @@ namespace MyRhinoPlugin1.commands
 
         protected override Result RunCommand(RhinoDoc doc, RunMode mode)
         {
+            customViewsMaker(doc, mode);
+            return Result.Success;
+        }
 
-                
+
+        public static void customViewsMaker(RhinoDoc doc, RunMode mode)
+        {
+
+  
 
             // Reset to 4-view layout
             RhinoApp.RunScript("_4View _Enter", false);
-
-            CustomViewsMAkerker(doc);
 
             // Get list of views
             var views = doc.Views.GetViewList(true, false);
@@ -32,7 +37,6 @@ namespace MyRhinoPlugin1.commands
             if (viewports.Count < 4)
             {
                 RhinoApp.WriteLine("Expected 4 viewports, found " + viewports.Count);
-                return Result.Failure;
             }
 
             // Set specific projections
@@ -40,7 +44,7 @@ namespace MyRhinoPlugin1.commands
             viewports[1].ActiveViewport.SetProjection(DefinedViewportProjection.Front, "Front View", false);
             viewports[2].ActiveViewport.SetProjection(DefinedViewportProjection.Top, "Top View", false);
             viewports[3].ActiveViewport.SetProjection(DefinedViewportProjection.Right, "Right View", false);
-           
+
 
             // Optionally adjust camera for perspective
             var perspectiveVP = viewports[3].ActiveViewport;
@@ -51,16 +55,9 @@ namespace MyRhinoPlugin1.commands
             foreach (var v in viewports)
             {
                 v.Redraw();
-                v.ActiveViewport.ZoomExtents(); 
+                v.ActiveViewport.ZoomExtents();
             }
 
-
-            return Result.Success;
-        }
-
-        private object CustomViewsMAkerker(RhinoDoc doc)
-        {
-            throw new NotImplementedException();
         }
     }
 }

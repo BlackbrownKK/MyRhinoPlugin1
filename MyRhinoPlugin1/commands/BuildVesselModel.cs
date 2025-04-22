@@ -12,7 +12,7 @@ using Rhino.Geometry;
 
 namespace MyRhinoPlugin1.commands
 {
-    public class BuildVesselModel : Rhino.Commands.Command
+    public class BuildVesselModel : Command
     {
         Mittelplate mittelplate;
 
@@ -123,6 +123,8 @@ namespace MyRhinoPlugin1.commands
                     RhinoDoc.ActiveDoc.Views.Redraw();
                 }
             }
+
+            CustomViewportLayoutCommand.customViewsMaker(doc, mode);
             return Result.Success;
         }
 

@@ -3,6 +3,7 @@ using Rhino.UI;
 using MyRhinoPlugin1.userInterface;
 using Eto.Drawing;  // Use Eto for cross-platform UI
 using System.Drawing;
+using MyRhinoPlugin1.commands;
 namespace MyRhinoPlugin1
 {
     ///<summary>
@@ -20,10 +21,15 @@ namespace MyRhinoPlugin1
             Instance = this;
         }
 
+ 
+
         public static MyRhinoPlugin1Plugin Instance { get; private set; }
 
+        private static CrossSectionMouseListener _mouseListener;
         protected override LoadReturnCode OnLoad(ref string errorMessage)
-        { 
+        {
+            _mouseListener = new CrossSectionMouseListener();
+            _mouseListener.Enabled = true;
             return LoadReturnCode.Success;
         }
     }

@@ -141,6 +141,12 @@ namespace MyRhinoPlugin1.vesselsDigitalModels
                 }  
             }
 
+            foreach (TDModel model in TDCollection)
+            {
+                model.TDAltitudeLowerPosition = TDAltitudeLowerPosition;
+                model.TDAltitudeUpperPosition = TDAltitudeUpperPosition;
+            }
+
             return TDCollection;
         }
 

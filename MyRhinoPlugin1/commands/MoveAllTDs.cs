@@ -1,9 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using MyRhinoPlugin1.vesselsDigitalModels;
 using Rhino;
 using Rhino.Commands;
 using Rhino.DocObjects;
@@ -14,59 +10,46 @@ namespace MyRhinoPlugin1.commands
     public class MoveAllTDs : Command
 
     {
-        public override string EnglishName => "MoveAllTDToLowerPosition"; 
+
+        public static MoveAllTDs Instance { get; private set; }
+
+     
+
+
+
+        public MoveAllTDs()
+        {
+            // Rhino only creates one instance of each command class defined in a
+            // plug-in, so it is safe to store a reference in a static property.
+            Instance = this;
+        }
+
+        public override string EnglishName => "MoveAllTDToLowerPosition";
+
         protected override Result RunCommand(RhinoDoc doc, RunMode mode)
         {
-            // Get the TD model from the document 
-            Mittelplate mittelplate = new Mittelplate();
-
-            Point3d InitialTSPosotion = new Point3d(
-              mittelplate.CargoHoldBasePont.X + mittelplate.firstOffset,
-              -mittelplate.CargoHoldWidth / 2,
-              mittelplate.CargoHoldBasePont.Z + mittelplate.TDAltitudeLowerPosition);
-  
-            // Get all TD models from the document
-              var tdModels = doc.Objects.FindByLayer("TD")
-                .Where(obj => obj is BrepObject && obj.Name.StartsWith("TD"))
-                .Select(obj => (BrepObject)obj)
-                .ToList();
-
-            // Move each TD model to its lower position
-            foreach (var tdModel in tdModels)
+            // Define the translation vector (e.g., moving 10 units down in the Z direction)
+            Vector3d translationVector = new Vector3d(0, 0, -1000);
+            // Iterate through all objects in the document
+            foreach (RhinoObject obj in doc.Objects)
             {
-                // Get current geometry
-                var brep = tdModel.Geometry as Brep;
-                if (brep == null)
-                    continue;
-
-                // Get current Z (lowest point of bounding box)
-                var bbox = brep.GetBoundingBox(true);
-                double currentZ = bbox.Min.Z;
-
-                // Try to parse TDAltitudeLowerPosition from the name or user string
-                double targetZ = 0;
-
-                // Option 1: If you've stored TDAltitudeLowerPosition as a user string:
-                var lowerPosStr = tdModel.Attributes.GetUserString("TDAltitudeLowerPosition");
-                if (!string.IsNullOrEmpty(lowerPosStr) && double.TryParse(lowerPosStr, out double parsedZ))
+                // Check if the object is on the "TD" layer
+                if (obj.Attributes.LayerIndex == doc.Layers.FindName("TD").Index)
                 {
-                    targetZ = parsedZ;
-                }
-                else
-                {
-                    RhinoApp.WriteLine($"⚠️ TD object '{tdModel.Name}' missing TDAltitudeLowerPosition user string.");
-                    continue;
+                    // Apply the translation transformation
+                    Transform translation = Transform.Translation(translationVector);
+                    obj.Geometry.Transform(translation);
+
+                    // Commit the changes to the object
+                    obj.CommitChanges();
                 }
 
-                // Compute translation vector
-                double deltaZ = targetZ - currentZ;
-                var translation = Transform.Translation(0, 0, deltaZ);
-
-                // Transform object in doc
-                doc.Objects.Transform(tdModel, translation, true);
+                
+               
             }
             doc.Views.Redraw();
             return Result.Success;
         }
     }
 }
+
