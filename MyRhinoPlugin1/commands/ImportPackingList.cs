@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using Eto.Forms;
+using MyRhinoPlugin1.data;
+using MyRhinoPlugin1.models;
 using Rhino;
 using Rhino.Commands;
 using Rhino.DocObjects;
@@ -47,8 +49,8 @@ namespace MyRhinoPlugin1.commands
             string filePath = openFileDialog.FileName;
             ImportController importController = new ImportController(filePath);
 
-            List<models.CargoModel> cargoList = importController.CargoList;
-            // print debug writeline this cargoList
+            List<CargoModel> cargoList = importController.CargoList;
+            DataModelHolder.Instance.CargoList = cargoList;
 
             List<Brep> cargoCollection = new List<Brep>();
 

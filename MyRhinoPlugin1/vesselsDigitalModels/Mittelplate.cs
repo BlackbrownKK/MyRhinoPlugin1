@@ -5,20 +5,8 @@ using MyRhinoPlugin1.models;
 
 namespace MyRhinoPlugin1.vesselsDigitalModels
 {
-    public class Mittelplate
+    public class Mittelplate : VesselModel
     {
-
-        public Point3d APPoint { get; set; }
-        public Point3d FPPoint { get; set; }
-
-        public Point3d CargoHoldBasePont { get; set; }
-        public Double CargoHoldLength { get; set; }
-        public Double CargoHoldWidth { get; set; }
-        public Double CargoHoldHeight { get; set; }
-
-        public Double VesselsLengthOA { get; set; }
-        public Double VesselsBreadth { get; set; }
-
         public double FuelTankLength { get; set; }
         public double FuelTankWidth { get; set; }
         public double FuelTankHeight { get; set; }
@@ -27,11 +15,6 @@ namespace MyRhinoPlugin1.vesselsDigitalModels
 
         public Brep FWRObliquePS { get; set; }
         public Brep FWRObliqueSB { get; set; }
-
-        public List<TDModel> TDList { get; set; }
-
-        public double TDAltitudeLowerPosition { get; set; }
-        public double TDAltitudeUpperPosition { get; set; }
 
         public  double standartLength { get; set; }
         public  double standartWidth { get; set; }
@@ -44,9 +27,7 @@ namespace MyRhinoPlugin1.vesselsDigitalModels
         public double TDB_TD2 { get; set; }
         public double firstOffset { get; set; }
         public  double offset { get; set; }
-
-        public List<Brep> VesselElements { get; set; }
-
+         
 
         public Mittelplate()
         {
@@ -79,7 +60,7 @@ namespace MyRhinoPlugin1.vesselsDigitalModels
             TDA_TD2 = 1271;
             TDB_TD2 = 1106;
             TDAltitudeLowerPosition = 3980;
-            TDAltitudeUpperPosition = 4070;
+            TDAltitudeUpperPosition = 4680;
             firstOffset = 36;
             offset = 15;
 
@@ -122,7 +103,8 @@ namespace MyRhinoPlugin1.vesselsDigitalModels
             TDCollection.Add(new TDModel("TD_13", standartLength, standartWidth, standartHeight, 0, 0, TDAltitudeLowerPosition, TDAltitudeUpperPosition)); // i = 12
             TDCollection.Add(new TDModel("TD_14", standartLength, standartWidth, standartHeight, 0, 0, TDAltitudeLowerPosition, TDAltitudeUpperPosition)); // i = 13
 
- 
+          
+
 
             // set the position points
             TDCollection[13].LocationOfPosition = new Point3d(InitialTSPosotion.X, InitialTSPosotion.Y, InitialTSPosotion.Z);

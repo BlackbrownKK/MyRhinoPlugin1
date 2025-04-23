@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
- 
+using MyRhinoPlugin1.data;
 using MyRhinoPlugin1.models;
 using MyRhinoPlugin1.vesselsDigitalModels;
 using Rhino;
@@ -68,24 +68,10 @@ namespace MyRhinoPlugin1.commands
                     obj.Attributes.LayerIndex = vesselConstructionTemp.Index;
                     obj.Attributes.Name = "vesselConstruction";
                     vesselConstructionTemp.IsLocked = true;
-    
-
                     // Commit changes to the object
                     obj.CommitChanges();
-
-                    /*
-                  
-                    // Commit changes to the object
-                    doc.Views.Redraw();
-                    RhinoDoc.ActiveDoc.Views.Redraw();*/
-
                 }
             }
-
-
-
- 
-
 
             foreach (var v in doc.Views.GetViewList(true, false))
             {
@@ -94,7 +80,7 @@ namespace MyRhinoPlugin1.commands
             }
 
 
-            // Create the "vesselConstruction" layer if it doesn't exist
+            // Create the "TD" layer if it doesn't exist
             string layerTDName = "TD";
             Layer vesselTDLayer = utilites.LayerService.GetOrCreateLayer(doc, layerTDName);
             // Set the layer visibility to off
@@ -117,6 +103,7 @@ namespace MyRhinoPlugin1.commands
                     // Assign the Brep to the "TD" layer
                     obj.Attributes.LayerIndex = vesselTDLayerTemp.Index;
                     obj.Attributes.Name = tD.Name;
+                    mittelplate.TDInitialPositionPointList.Add(tD.Name, tD.LocationOfPosition);
                     // Commit changes to the object
                     obj.CommitChanges();
                     doc.Views.Redraw();
@@ -125,7 +112,13 @@ namespace MyRhinoPlugin1.commands
             }
 
             CustomViewportLayoutCommand.customViewsMaker(doc, mode);
+
+            // Set the singleton instance of DataModelHolder
+
+            DataModelHolder.Instance.Vessel = mittelplate;
+
             return Result.Success;
+
         }
 
     
