@@ -1,60 +1,79 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using Eto.Forms;
-using MyRhinoPlugin1.data;
-using MyRhinoPlugin1.models;
-using Rhino;
-using Rhino.Commands;
+﻿using Rhino.Commands;
 using Rhino.DocObjects;
 using Rhino.Geometry;
-
-
+using Rhino;
+using System;
+using System.Collections.Generic;
+using MyRhinoPlugin1.models;
 
 namespace MyRhinoPlugin1.commands
 {
-    public class ImportPackingList : Rhino.Commands.Command
+    public class AddingTestCargo : Command
     {
-        public ImportPackingList()
+        public AddingTestCargo()
         {
             // Rhino only creates one instance of each command class defined in a
             // plug-in, so it is safe to store a refence in a static property.
             Instance = this;
         }
 
-        public static ImportPackingList Instance { get; private set; }
+        public static AddingTestCargo Instance { get; private set; }
+
 
 
         ///<returns>The command name as it appears on the Rhino command line.</returns>
-        public override string EnglishName => "ImportPackingList";
+        public override string EnglishName => "AddingTestCargo";
 
 
         protected override Result RunCommand(RhinoDoc doc, RunMode mode)
         {
-            // Open file dialog for CSV selection
 
-            var openFileDialog = new Rhino.UI.OpenFileDialog
-            {
-                Filter = "Excel Files (*.xlsx)|*.xlsx|CSV Files (*.csv)|*.csv|All Files (*.*)|*.*",
-                Title = "Select Packing List Excel File"
-            };
 
-            // Show the dialog and check if a file was selected
-            if (openFileDialog.ShowOpenDialog() == false)
+            // create rendom cargo <CargoModel>
+            List<CargoModel> cargoList = new List<CargoModel>();
+            for (int i = 0; i < 3; i++)
             {
-                RhinoApp.WriteLine("No file selected.");
-                return Result.Cancel;
+                cargoList.Add(new CargoModel()
+                {
+                    Weight = 1000,
+                    Length = 1000,
+                    Width = 1000,
+                    Height = 1000,
+                    Quentity = 1,
+                    Name = "Cargo" + i
+                });
             }
 
-            string filePath = openFileDialog.FileName;
-            ImportController importController = new ImportController(filePath);
 
-            List<CargoModel> cargoList = importController.CargoList;
-            DataModelHolder.Instance.CargoList = cargoList;
+
+
+            
+           data.DataModelHolder.Instance.CargoList = cargoList;
+
+
 
             List<Brep> cargoCollection = new List<Brep>();
 
-            Point3d origin = new Point3d(0, 0, 0);
+            //find the vesselConstruction item in the drawing end get it base point
+            Point3d basePoint = new Point3d(0, 0, 0);
+
+            foreach (var item in doc.Objects)
+            {
+             if (item.Name == "vesselConstruction")  
+
+                {
+                    if (item.Geometry is Brep brep)
+                    {
+                        BoundingBox bbox = brep.GetBoundingBox(true);
+                        basePoint = bbox.Min;
+                        break;
+                    }
+                }
+            }
+            // Offset the base point in Y direction
+            basePoint = new Point3d(basePoint.X, basePoint.Y + -5000, basePoint.Z); 
+
+
             foreach (var cargo in cargoList)
             {
                 for (int i = 0; i < cargo.Quentity; i++)
@@ -62,7 +81,7 @@ namespace MyRhinoPlugin1.commands
                     RhinoApp.WriteLine($"Cargo {cargo.ToString()}");
 
                     // Define the box corner points
-                    Point3d corner1 = origin;
+                    Point3d corner1 = basePoint;
                     Point3d corner2 = new Point3d(corner1.X + cargo.Length, corner1.Y + cargo.Width, corner1.Z + cargo.Height);
 
                     // Create a box using a bounding rectangle
@@ -70,12 +89,16 @@ namespace MyRhinoPlugin1.commands
                     Box box = new Box(bbox);
 
                     // Move the origin for the next box (if needed)
-                    origin.X += cargo.Length + 100; // Offset boxes in X direction
+                    basePoint.X += cargo.Length + 1000; // Offset boxes in X direction
 
                     // Create and add the Brep representation of the box to the document
                     cargoCollection.Add(box.ToBrep());
                 }
             }
+
+
+
+
 
             // Create a new layer for the cargo
             string layerName = "CargoLayer";
@@ -92,12 +115,7 @@ namespace MyRhinoPlugin1.commands
             }
             // Add the cargo Breps to the document and assign them to the new layer
 
-            RhinoApp.RunScript("_New", false);
-            foreach (Brep cargoBrep in cargoCollection)
-            {
-                RhinoDoc.ActiveDoc.Objects.Add(cargoBrep);
-                RhinoDoc.ActiveDoc.Views.Redraw();
-            }
+     
             foreach (Brep cargoBrep in cargoCollection)
             {
                 // Add the Brep to the document and get the Guid of the object
@@ -122,5 +140,4 @@ namespace MyRhinoPlugin1.commands
         }
     }
 }
-
 

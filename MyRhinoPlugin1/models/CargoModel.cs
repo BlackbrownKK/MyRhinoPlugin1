@@ -11,7 +11,9 @@ namespace MyRhinoPlugin1.models
         public double Height { get; set; }
         public double Weight { get; set; }
 
-       
+        public CargoModel()
+        {
+        }
 
         public CargoModel(string name, int quentity, double length, double width, double height, double weight)
         {

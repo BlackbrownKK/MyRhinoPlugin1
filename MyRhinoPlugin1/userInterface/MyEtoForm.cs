@@ -5,6 +5,7 @@ using Eto.Drawing;
 using Rhino;
 using Rhino.Geometry;
 using Point = Rhino.Geometry.Point;
+using MyRhinoPlugin1.commands;
 
 namespace MyRhinoPlugin1.userInterface
 {
@@ -122,11 +123,14 @@ namespace MyRhinoPlugin1.userInterface
                 drawable.Invalidate(); // Redraw with new scale
             };
 
-
-
            
+            
 
-        var label = new Label { Text = "Hello Eto.Forms!" };
+
+
+
+
+            var label = new Label { Text = "Hello Eto.Forms!" };
 
             var buildModel = new Button { Text = "Build the Mittelplate model" };
             buildModel.Click += (sender, e) => RhinoApp.RunScript("BuildModel", false);
@@ -140,6 +144,10 @@ namespace MyRhinoPlugin1.userInterface
             var moveTDUpper = new Button { Text = "Move All TDs Upper pos" };
             moveTDUpper.Click += (sender, e) => RhinoApp.RunScript("MoveAllTDToUpperPosition", false);
 
+            var AddTestCargo = new Button { Text = "Add Some Cargo" };
+            AddTestCargo.Click += (sender, e) => RhinoApp.RunScript("AddingTestCargo", false);
+
+
             // Layout
             var layout = new DynamicLayout { Padding = 10, Spacing = new Size(5, 5) };
             layout.Add(drawable);
@@ -147,6 +155,7 @@ namespace MyRhinoPlugin1.userInterface
             layout.AddSeparateRow(moveTDButton);
             layout.AddSeparateRow(moveTDUpper);
             layout.AddSeparateRow(buildModel, importPackingList);
+            layout.AddSeparateRow(AddTestCargo);
 
             Content = layout;
 
