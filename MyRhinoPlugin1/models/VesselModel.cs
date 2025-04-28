@@ -16,6 +16,7 @@ namespace MyRhinoPlugin1.models
 
         public double VesselsLengthOA { get; set; }
         public double VesselsBreadth { get; set; }
+        public double VesselsHeight { get; set; }
 
         public double TDAltitudeLowerPosition { get; set; }
         public double TDAltitudeUpperPosition { get; set; }

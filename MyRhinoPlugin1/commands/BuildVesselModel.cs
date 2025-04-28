@@ -10,7 +10,7 @@ using Rhino;
 using Rhino.Commands;
 using Rhino.DocObjects;
 using Rhino.Geometry;
- 
+
 
 
 namespace MyRhinoPlugin1.commands
@@ -32,7 +32,7 @@ namespace MyRhinoPlugin1.commands
         ///<returns>The command name as it appears on the Rhino command line.</returns>
         public override string EnglishName => "BuildModel";
 
-      
+
 
         protected override Result RunCommand(RhinoDoc doc, RunMode mode)
         {
@@ -52,7 +52,7 @@ namespace MyRhinoPlugin1.commands
             Layer vesselLayer = utilites.LayerService.GetOrCreateLayer(doc, layerName);
             // Set the layer visibility to off
             vesselLayer.IsVisible = true;
-            vesselLayer.IsLocked = false; 
+            vesselLayer.IsLocked = false;
 
             // Add the final unioned Brep(s) to the document, assign them to the new layer
             foreach (Brep brep in finalBrepResult)
@@ -77,8 +77,7 @@ namespace MyRhinoPlugin1.commands
             }
 
 
-            Curve test = drawVesselSideCurve();
-            doc.Objects.AddCurve(test);
+
 
             foreach (var v in doc.Views.GetViewList(true, false))
             {
@@ -96,8 +95,8 @@ namespace MyRhinoPlugin1.commands
             List<TDModel> TDList = new List<TDModel>();
             TDObjectCreator tDObjectCreator = new TDObjectCreator();
             TDList = tDObjectCreator.TDBrepCreator(mittelplate.TDList);
-            
-            foreach(var tD in TDList)
+
+            foreach (var tD in TDList)
             {
                 // Add the Brep to the document and get the Guid of the object
                 Guid objGuid = doc.Objects.AddBrep(tD.TDModelBrep);
@@ -133,11 +132,9 @@ namespace MyRhinoPlugin1.commands
         // Method to generate vessel geometry (Brep) and perform Boolean difference
         private Brep[] GenerateVesselGeometry(RhinoDoc doc, RunMode mode)
         {
-            Brep[] vesselBodyBrepArray = drawVesselBase();
-            Brep vesselBodyBrep = vesselBodyBrepArray[0]; // Assuming you want the first Brep from the array
-
+            Brep vesselBodyBrep = drawVesselBase(doc);
             Brep vesselHoldBrep = drawVesselsHold();
-            
+
 
 
 
@@ -158,13 +155,50 @@ namespace MyRhinoPlugin1.commands
                 RhinoApp.WriteLine("Error: Boolean difference failed.");
                 return null;
             }
-            
+
             // Return the final unioned Brep(s)
             return differenceResult;
         }
 
+        private Brep drawVesselBase(RhinoDoc doc)
+        {
+            string SideCurveMittelplateBody = "SideCurveMittelplateBody.txt";
+            string TopCurveMittelplateBody = "TopCurveMittelplateBody.txt";
+            Brep maxBaseBox = drawBaseBox();
+            doc.Objects.AddBrep(maxBaseBox);
 
+            Brep top = drawVesselBaseFromTopView(doc, TopCurveMittelplateBody);
+            Brep side = drawVesselBaseFromSideView(doc, SideCurveMittelplateBody);
+            // toto side - (maxBaseBox - top)
+            Brep[] BoxMinusTop = service.Operations3D.BooleanDifferenceOperations.PerformBooleanDifference(maxBaseBox, top, doc);
+             
+           // doc.Objects.AddBrep(BoxMinusTop);
+           // Brep sideMinusBoxMinusTop = service.Operations3D.BooleanDifferenceOperations.PerformBooleanDifference(side, BoxMinusTop, doc)[0];
 
+            return side;
+        }
+
+        private Brep drawBaseBox()
+        {
+            double length = mittelplate.VesselsLengthOA;
+            double width = mittelplate.VesselsBreadth;
+            double height = mittelplate.VesselsHeight * 2;
+            // Calculate bounding box corners
+            Point3d minPoint = new Point3d(0, -width / 2, 0);
+            Point3d maxPoint = new Point3d(length, width / 2, height);
+            // Create a box
+            Box startBoxVessel = new Box(new BoundingBox(minPoint, maxPoint));
+            // Create a Brep from the box
+            Brep startBoxVesselBrep = startBoxVessel.ToBrep();
+            // Check if the Brep is valid
+            if (startBoxVesselBrep == null || !startBoxVesselBrep.IsValid)
+            {
+                RhinoApp.WriteLine("Error: Failed to create a valid Brep from the box.");
+                return null;
+            }
+            return startBoxVesselBrep;
+
+        }
 
         private Brep drawVesselsHold()
         {
@@ -174,7 +208,7 @@ namespace MyRhinoPlugin1.commands
             // Define box dimensions
             double length = mittelplate.CargoHoldLength;
             double width = mittelplate.CargoHoldWidth;
-            double height = mittelplate.CargoHoldHeight;
+            double height = mittelplate.CargoHoldHeight + 100;
 
             // Calculate bounding box corners
             Point3d minPoint = new Point3d(baseOrigin.X, baseOrigin.Y - width / 2, baseOrigin.Z);
@@ -189,21 +223,22 @@ namespace MyRhinoPlugin1.commands
 
 
         // Method to draw the vessel body. Here creare
-        private Curve drawVesselSideCurve()
+        private Curve drawVesselsCurve(string curveName, string filename)
         {
+
             string projectRoot = Directory.GetParent(Directory.GetCurrentDirectory()).Parent.Parent.FullName;
-            string path = Path.Combine(projectRoot, "vesselsDigitalModels", "SideCurveMittelplateBody.txt");
+            string path = Path.Combine(projectRoot, "vesselsDigitalModels", filename);
             RhinoApp.WriteLine(path);
             // Check if the file exists
             if (!File.Exists(path))
-        {
-        RhinoApp.WriteLine($"Error: File not found at {path}");
-        return null;
+            {
+                RhinoApp.WriteLine($"Error: File not found at {path}");
+                return null;
 
-        }
-            List <Point3d> sideCurvE = service.ReadPointsFromTxt.PointsReader(path);
-            service.CerveCreator curveCreator = new service.CerveCreator("SideCurve", sideCurvE);
-            Curve curve = curveCreator.CerveCreatorByListOfPoints();
+            }
+            List<Point3d> pointsCollection = service.ReadPointsFromTxt.PointsReader(path);
+            service.CerveCreator curveCreator = new service.CerveCreator(curveName, pointsCollection);
+            Curve curve = curveCreator.CreateSafeCurve();
 
             // Make sure curve is valid and closed
             if (curve == null || !curve.IsClosed)
@@ -214,43 +249,47 @@ namespace MyRhinoPlugin1.commands
             return curve;
         }
 
-        private Brep[] drawVesselBase()
+        private Brep drawVesselBaseFromSideView(RhinoDoc doc, string pathFileName)
         {
-            Curve curve = drawVesselSideCurve();
-            RhinoApp.WriteLine(curve.ToString());
-            double breath = mittelplate.VesselsBreadth;
+            Curve sideCurve = drawVesselsCurve("sideCurve", pathFileName);  
+            double offset = -mittelplate.VesselsBreadth / 2.0;
+            Transform move = Transform.Translation(0, offset, 0);
+            sideCurve.Transform(move);
+             
 
-            Vector3d vectorToSBSide = new Vector3d(0, -breath, 0);
-            Vector3d vectorToPSSide = new Vector3d(0, breath, 0);
+            // create extrusion
+            double breathExtrude = mittelplate.VesselsBreadth;
+            Vector3d vectorToSBSide = new Vector3d(0, breathExtrude, 0);
 
-            // create a brep from the curve
-            Brep SBSideBrep = service.Operations3D.BrepCreator.CreateExtrudedBrep(curve, vectorToSBSide);
-            // Check if the extrusion was successful
+            Brep SBSideBrep = service.Operations3D.BrepCreator.CreateExtrudedBrep(sideCurve, vectorToSBSide);
             if (SBSideBrep == null)
             {
-                RhinoApp.WriteLine("Error:  drawVesselBase() =>  SBSideBrep is null.");
-                return null;
-            }
-            Brep PSSideBrep = service.Operations3D.BrepCreator.CreateExtrudedBrep(curve, vectorToPSSide);
-            // Check if the extrusion was successful
-            if (PSSideBrep == null)
-            {
-                RhinoApp.WriteLine("Error:  drawVesselBase() =>  PSSideBrep is null.");
+                RhinoApp.WriteLine("Error: extrusion creation failed. = > drawVesselBaseFromSideView");
                 return null;
             }
 
-            // join the two sides
-            RhinoApp.WriteLine($"SBSideBrep IsSolid: {SBSideBrep.IsSolid}");
-            RhinoApp.WriteLine($"PSSideBrep IsSolid: {PSSideBrep.IsSolid}");
-            Brep[] joinedBreps = service.Operations3D.BooleanUnionOperations.PerformBooleanUnion(new List<Brep> { SBSideBrep, PSSideBrep }, RhinoDoc.ActiveDoc);
-            // Check if the join was successful
-            if (joinedBreps == null || joinedBreps.Length == 0)
+            return SBSideBrep; 
+        }
+
+        private Brep drawVesselBaseFromTopView(RhinoDoc doc, string pathFileName)
+        {
+            Curve topCurve = drawVesselsCurve("topCurve", pathFileName);   
+
+
+            // create extrusion
+            double  extrude = mittelplate.VesselsHeight;
+            Vector3d vector  = new Vector3d(0, 0, extrude * 2);
+
+            Brep topBrep = service.Operations3D.BrepCreator.CreateExtrudedBrep(topCurve, vector);
+            if (topBrep == null)
             {
-                RhinoApp.WriteLine("Error:  drawVesselBase() =>  Boolean union failed.");
+                RhinoApp.WriteLine("Error: extrusion creation failed. = > drawVesselBaseFromTopView");
                 return null;
             }
-            return joinedBreps;
+
+            return topBrep;
         }
+
     }
 }
 

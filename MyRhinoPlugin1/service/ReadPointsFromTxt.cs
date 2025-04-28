@@ -24,7 +24,7 @@ namespace MyRhinoPlugin1.service
 
             foreach (string line in File.ReadLines(filePath))
             {
-                RhinoApp.WriteLine($"Raw line: {line}");
+               
 
                 // Remove index and curly braces like "1. {" and "}"
                 int braceStart = line.IndexOf('{');
@@ -39,8 +39,9 @@ namespace MyRhinoPlugin1.service
                         double.TryParse(parts[1], NumberStyles.Any, CultureInfo.InvariantCulture, out double y) &&
                         double.TryParse(parts[2], NumberStyles.Any, CultureInfo.InvariantCulture, out double z))
                     {
-                        points.Add(new Point3d(x, 0, z));
-                        RhinoApp.WriteLine($"Point added: {x}, {0}, {z}");
+                        //RhinoApp.WriteLine($"Parsed point: {x}, {y}, {z}");
+                        points.Add(new Point3d(x, y, z));
+                     
                     }
                 }
             }
