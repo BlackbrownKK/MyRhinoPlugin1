@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Rhino.Geometry;
+using System;
 
 namespace MyRhinoPlugin1.models
 {
@@ -10,6 +11,7 @@ namespace MyRhinoPlugin1.models
         public double Width { get; set; }
         public double Height { get; set; }
         public double Weight { get; set; }
+        public Point4d point4D { get; set; }
 
         public CargoModel()
         {

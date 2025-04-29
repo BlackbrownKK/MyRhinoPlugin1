@@ -171,18 +171,18 @@ namespace MyRhinoPlugin1.commands
             Brep side = drawVesselBaseFromSideView(doc, SideCurveMittelplateBody);
             // toto side - (maxBaseBox - top)
             Brep[] BoxMinusTop = service.Operations3D.BooleanDifferenceOperations.PerformBooleanDifference(maxBaseBox, top, doc);
-             
-           // doc.Objects.AddBrep(BoxMinusTop);
-           // Brep sideMinusBoxMinusTop = service.Operations3D.BooleanDifferenceOperations.PerformBooleanDifference(side, BoxMinusTop, doc)[0];
+
+            doc.Objects.AddBrep(BoxMinusTop[0]);
+           //Brep sideMinusBoxMinusTop = service.Operations3D.BooleanDifferenceOperations.PerformBooleanDifference(side, BoxMinusTop[0], doc)[0];
 
             return side;
         }
 
         private Brep drawBaseBox()
         {
-            double length = mittelplate.VesselsLengthOA;
-            double width = mittelplate.VesselsBreadth;
-            double height = mittelplate.VesselsHeight * 2;
+            double length = mittelplate.VesselsLengthOA*1.2;
+            double width = mittelplate.VesselsBreadth*1.2;
+            double height = mittelplate.VesselsHeight *1.2;
             // Calculate bounding box corners
             Point3d minPoint = new Point3d(0, -width / 2, 0);
             Point3d maxPoint = new Point3d(length, width / 2, height);

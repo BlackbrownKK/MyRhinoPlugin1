@@ -21,7 +21,7 @@ namespace MyRhinoPlugin1
             Instance = this;
         }
 
- 
+        // todo cross section ! aft + side 
 
         public static MyRhinoPlugin1Plugin Instance { get; private set; }
 
