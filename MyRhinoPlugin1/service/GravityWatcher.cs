@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Win32;
 using Rhino.UI;
+using MyRhinoPlugin1.commands;
 
 namespace MyRhinoPlugin1.service
 {
@@ -76,7 +77,9 @@ namespace MyRhinoPlugin1.service
 
             // Skip gravity if active viewport is Top
             var activeViewport = doc.Views.ActiveView.ActiveViewport;
-            if (activeViewport.IsParallelProjection && activeViewport.Name == "Top View")
+            if (activeViewport.IsParallelProjection && 
+                activeViewport.Name == CustomViewportLayoutCommand.TopViewName || 
+                activeViewport.Name == CustomViewportLayoutCommand.IsometricViewName)
                 return;
 
 

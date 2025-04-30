@@ -12,7 +12,14 @@ namespace MyRhinoPlugin1.commands
 {
     public class CustomViewportLayoutCommand : Command
     {
-        public override string EnglishName => "CustomViews"; 
+        public override string EnglishName => "CustomViews";
+
+        public static string IsometricViewName = "Isometric view";
+        public static string SideViewName = "Side view";
+        public static string TopViewName = "Top view";
+        public static string FwdViewName = "FWD view";
+       
+
 
 
         protected override Result RunCommand(RhinoDoc doc, RunMode mode)
@@ -40,10 +47,10 @@ namespace MyRhinoPlugin1.commands
             }
 
             // Set specific projections
-            viewports[0].ActiveViewport.SetProjection(DefinedViewportProjection.Perspective, "Isometric View", false);
-            viewports[1].ActiveViewport.SetProjection(DefinedViewportProjection.Front, "Front View", false);
-            viewports[2].ActiveViewport.SetProjection(DefinedViewportProjection.Top, "Top View", false);
-            viewports[3].ActiveViewport.SetProjection(DefinedViewportProjection.Right, "Right View", false);
+            viewports[0].ActiveViewport.SetProjection(DefinedViewportProjection.Perspective, IsometricViewName, false);
+            viewports[1].ActiveViewport.SetProjection(DefinedViewportProjection.Front, SideViewName, false);
+            viewports[2].ActiveViewport.SetProjection(DefinedViewportProjection.Top, TopViewName, false);
+            viewports[3].ActiveViewport.SetProjection(DefinedViewportProjection.Right, FwdViewName, false);
 
 
             // Optionally adjust camera for perspective
