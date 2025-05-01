@@ -163,18 +163,7 @@ namespace MyRhinoPlugin1.commands
         private Brep drawVesselBase(RhinoDoc doc)
         {
             string SideCurveMittelplateBody = "SideCurveMittelplateBody.txt";
-            string TopCurveMittelplateBody = "TopCurveMittelplateBody.txt";
-            Brep maxBaseBox = drawBaseBox();
-            doc.Objects.AddBrep(maxBaseBox);
-
-            Brep top = drawVesselBaseFromTopView(doc, TopCurveMittelplateBody);
             Brep side = drawVesselBaseFromSideView(doc, SideCurveMittelplateBody);
-            // toto side - (maxBaseBox - top)
-            Brep[] BoxMinusTop = service.Operations3D.BooleanDifferenceOperations.PerformBooleanDifference(maxBaseBox, top, doc);
-
-            doc.Objects.AddBrep(BoxMinusTop[0]);
-           //Brep sideMinusBoxMinusTop = service.Operations3D.BooleanDifferenceOperations.PerformBooleanDifference(side, BoxMinusTop[0], doc)[0];
-
             return side;
         }
 
