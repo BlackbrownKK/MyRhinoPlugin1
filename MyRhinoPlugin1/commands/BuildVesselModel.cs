@@ -52,7 +52,7 @@ namespace MyRhinoPlugin1.commands
             Layer vesselLayer = utilites.LayerService.GetOrCreateLayer(doc, layerName);
             // Set the layer visibility to off
             vesselLayer.IsVisible = true;
-            vesselLayer.IsLocked = false;
+            vesselLayer.IsLocked = true;
 
             // Add the final unioned Brep(s) to the document, assign them to the new layer
             foreach (Brep brep in finalBrepResult)
@@ -70,7 +70,7 @@ namespace MyRhinoPlugin1.commands
                     // Assign the Brep to the "vesselConstruction" layer
                     obj.Attributes.LayerIndex = vesselConstructionTemp.Index;
                     obj.Attributes.Name = "vesselConstruction";
-                    vesselConstructionTemp.IsLocked = false;
+                    vesselConstructionTemp.IsLocked = true;
                     // Commit changes to the object
                     obj.CommitChanges();
                 }

@@ -4,6 +4,7 @@ using MyRhinoPlugin1.userInterface;
 using Eto.Drawing;  // Use Eto for cross-platform UI
 using System.Drawing;
 using MyRhinoPlugin1.commands;
+using Rhino;
 namespace MyRhinoPlugin1
 {
     ///<summary>
@@ -30,7 +31,12 @@ namespace MyRhinoPlugin1
         {
             _mouseListener = new CrossSectionMouseListener();
             _mouseListener.Enabled = true;
+            behavior.CollisionGuard.Enable();
             return LoadReturnCode.Success;
         }
+
+        // New method to trigger the cross-section listener or handle actions
+
+        
     }
-}
+} 
