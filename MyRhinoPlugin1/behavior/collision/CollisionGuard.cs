@@ -7,7 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MyRhinoPlugin1.behavior
+namespace MyRhinoPlugin1.behavior.collision
 {
     public class CollisionGuard
     {

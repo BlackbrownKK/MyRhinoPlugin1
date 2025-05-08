@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MyRhinoPlugin1.utilites
+namespace MyRhinoPlugin1.service
 {
     public static class LayerService
     {
@@ -24,6 +24,6 @@ namespace MyRhinoPlugin1.utilites
             }
 
             return layer;
-        } 
+        }
     }
 }

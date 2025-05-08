@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using Rhino;
 
 
-namespace MyRhinoPlugin1.service
+namespace MyRhinoPlugin1.behavior.gravity
 {
     public class GravityFunction
     {
@@ -23,7 +23,7 @@ namespace MyRhinoPlugin1.service
             Point3d? closestPoint = null; // The ? makes it a nullable Point3d.
             double closestDist = double.MaxValue;
             // checking which ground object is directly below a box and how far away it is.
-            foreach (var ground in groundBreps) 
+            foreach (var ground in groundBreps)
             {
                 // sends a ray into Rhino geometry to see where it intersects
                 // to make them into the array.
@@ -52,5 +52,5 @@ namespace MyRhinoPlugin1.service
 
             return false;
         }
-    } 
+    }
 }

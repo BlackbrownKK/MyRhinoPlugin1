@@ -7,7 +7,7 @@ using System.Linq;
 using MyRhinoPlugin1.models;
 using Rhino;
 
-namespace MyRhinoPlugin1
+namespace MyRhinoPlugin1.controllers.importController
 {
     public class CsvFileReaderController
     {

@@ -17,6 +17,13 @@ namespace MyRhinoPlugin1.service
             Points = points;
         }
 
+        public CerveCreator(List<Point3d> points)
+        {
+            Points = points;
+        }
+
+
+
         // Create a curve from the points with full safety
         public Curve CreateSafeCurve()
         {

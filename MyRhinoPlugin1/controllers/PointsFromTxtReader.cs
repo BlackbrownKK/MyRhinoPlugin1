@@ -8,9 +8,9 @@ using Rhino.Geometry;
 using System.Globalization;
 using Rhino;
 
-namespace MyRhinoPlugin1.service
+namespace MyRhinoPlugin1.controllers
 {
-    public class ReadPointsFromTxt
+    public class PointsFromTxtReader
     {
         public static List<Point3d> PointsReader(string filePath)
         {
@@ -24,7 +24,7 @@ namespace MyRhinoPlugin1.service
 
             foreach (string line in File.ReadLines(filePath))
             {
-               
+
 
                 // Remove index and curly braces like "1. {" and "}"
                 int braceStart = line.IndexOf('{');
@@ -41,7 +41,7 @@ namespace MyRhinoPlugin1.service
                     {
                         //RhinoApp.WriteLine($"Parsed point: {x}, {y}, {z}");
                         points.Add(new Point3d(x, y, z));
-                     
+
                     }
                 }
             }

@@ -5,11 +5,15 @@ using System.Linq;
 using System.Security.Cryptography;
 using MyRhinoPlugin1.data;
 using MyRhinoPlugin1.models;
+using MyRhinoPlugin1.controllers;
 using MyRhinoPlugin1.vesselsDigitalModels;
 using Rhino;
 using Rhino.Commands;
 using Rhino.DocObjects;
 using Rhino.Geometry;
+
+using Rhino.UI;
+using MyRhinoPlugin1.controllers.importController;
 
 
 
@@ -20,20 +24,16 @@ namespace MyRhinoPlugin1.commands
         Mittelplate mittelplate;
 
         public BuildVesselModel()
-        {
-            // Rhino only creates one instance of each command class defined in a
-            // plug-in, so it is safe to store a refence in a static property.
+        { 
             Instance = this;
             mittelplate = new Mittelplate();
-        }
+        } 
+
         public static BuildVesselModel Instance { get; private set; }
-
-
-        ///<returns>The command name as it appears on the Rhino command line.</returns>
+         
+ 
         public override string EnglishName => "BuildModel";
-
-
-
+         
         protected override Result RunCommand(RhinoDoc doc, RunMode mode)
         {
 
@@ -45,14 +45,12 @@ namespace MyRhinoPlugin1.commands
             {
                 RhinoApp.WriteLine("Error: Boolean operations failed.");
                 return Result.Failure;
-            }
-
-            // Create the "vesselConstruction" layer if it doesn't exist
-            string layerName = "vesselConstruction";
-            Layer vesselLayer = utilites.LayerService.GetOrCreateLayer(doc, layerName);
+            } 
+            string layerName = "vesselConstruction"; 
+            Layer vesselLayer = service.LayerService.GetOrCreateLayer(doc, layerName);
             // Set the layer visibility to off
             vesselLayer.IsVisible = true;
-            vesselLayer.IsLocked = true;
+            vesselLayer.IsLocked = false;
 
             // Add the final unioned Brep(s) to the document, assign them to the new layer
             foreach (Brep brep in finalBrepResult)
@@ -61,34 +59,32 @@ namespace MyRhinoPlugin1.commands
                 Guid objGuid = doc.Objects.AddBrep(brep);
 
                 // Get the RhinoObject associated with the Guid
-                RhinoObject obj = doc.Objects.Find(objGuid);
+                RhinoObject objTemp = doc.Objects.Find(objGuid);
 
-                if (obj != null)
+                if (objTemp != null)
                 {
                     Layer vesselConstructionTemp = doc.Layers.FindName("vesselConstruction");
-
                     // Assign the Brep to the "vesselConstruction" layer
-                    obj.Attributes.LayerIndex = vesselConstructionTemp.Index;
-                    obj.Attributes.Name = "vesselConstruction";
-                    vesselConstructionTemp.IsLocked = true;
+                    objTemp.Attributes.LayerIndex = vesselConstructionTemp.Index;
+                    objTemp.Attributes.Name = "vesselConstruction";
+                    vesselConstructionTemp.IsLocked = false;
                     // Commit changes to the object
-                    obj.CommitChanges();
+                    objTemp.CommitChanges();
                 }
             }
-
-
-
-
-            foreach (var v in doc.Views.GetViewList(true, false))
-            {
-                v.ActiveViewport.ZoomExtents();
-                v.Redraw();
-            }
-
-
+            
             // Create the "TD" layer if it doesn't exist
             string layerTDName = "TD";
-            Layer vesselTDLayer = utilites.LayerService.GetOrCreateLayer(doc, layerTDName);
+
+            /* Unmerged change from project 'MyRhinoPlugin1 (net7.0)'
+            Before:
+                        Layer vesselTDLayer = utilites.LayerService.GetOrCreateLayer(doc, layerTDName);
+                        // Set the layer visibility to off
+            After:
+                        Layer vesselTDLayer = LayerService.GetOrCreateLayer(doc, layerTDName);
+                        // Set the layer visibility to off
+            */
+            Layer vesselTDLayer = service.LayerService.GetOrCreateLayer(doc, layerTDName);
             // Set the layer visibility to off
             vesselTDLayer.IsVisible = true;
             vesselTDLayer.IsLocked = false;
@@ -101,38 +97,44 @@ namespace MyRhinoPlugin1.commands
                 // Add the Brep to the document and get the Guid of the object
                 Guid objGuid = doc.Objects.AddBrep(tD.TDModelBrep);
                 // Get the RhinoObject associated with the Guid
-                RhinoObject obj = doc.Objects.Find(objGuid);
-                if (obj != null)
+                RhinoObject objTemp = doc.Objects.Find(objGuid);
+                if (objTemp != null)
                 {
                     // Get the layer index of the "TD" layer
                     Layer vesselTDLayerTemp = doc.Layers.FindName("TD");
                     // Assign the Brep to the "TD" layer
-                    obj.Attributes.LayerIndex = vesselTDLayerTemp.Index;
-                    obj.Attributes.Name = tD.Name;
+                    objTemp.Attributes.LayerIndex = vesselTDLayerTemp.Index;
+                    objTemp.Attributes.Name = tD.Name;
                     mittelplate.TDInitialPositionPointList.Add(tD.Name, tD.LocationOfPosition);
                     // Commit changes to the object
-                    obj.CommitChanges();
+                    objTemp.CommitChanges();
                     doc.Views.Redraw();
                     RhinoDoc.ActiveDoc.Views.Redraw();
                 }
             }
 
-            CustomViewportLayoutCommand.customViewsMaker(doc, mode);
+            
+
 
             // Set the singleton instance of DataModelHolder
-
             DataModelHolder.Instance.Vessel = mittelplate;
+            CustomViewportLayoutCommand.custom2ViewsMaker(doc, mode);
+            doc.Views.Redraw();
 
+            foreach (var v in doc.Views.GetViewList(true, false))
+            {
+                v.ActiveViewport.ZoomExtents();
+                v.Redraw();
+            }
             return Result.Success;
-
         }
-
 
 
         // Method to generate vessel geometry (Brep) and perform Boolean difference
         private Brep[] GenerateVesselGeometry(RhinoDoc doc, RunMode mode)
         {
-            Brep vesselBodyBrep = drawVesselBase(doc);
+           
+            Brep vesselBodyBrep = drawBaseBox();
             Brep vesselHoldBrep = drawVesselsHold();
 
 
@@ -144,7 +146,6 @@ namespace MyRhinoPlugin1.commands
                 RhinoApp.WriteLine("Error: GenerateVesselGeometry => Invalid vessel geometry.");
                 return null;
             }
-
 
 
             // Perform Boolean Difference: vesselBody - vesselHold
@@ -160,20 +161,15 @@ namespace MyRhinoPlugin1.commands
             return differenceResult;
         }
 
-        private Brep drawVesselBase(RhinoDoc doc)
-        {
-            string SideCurveMittelplateBody = "SideCurveMittelplateBody.txt";
-            Brep side = drawVesselBaseFromSideView(doc, SideCurveMittelplateBody);
-            return side;
-        }
 
         private Brep drawBaseBox()
         {
-            double length = mittelplate.VesselsLengthOA*1.2;
-            double width = mittelplate.VesselsBreadth*1.2;
-            double height = mittelplate.VesselsHeight *1.2;
+
+            double length = mittelplate.CargoHoldLength + 16000;
+            double width = mittelplate.VesselsBreadth;
+            double height = mittelplate.VesselsHeight;
             // Calculate bounding box corners
-            Point3d minPoint = new Point3d(0, -width / 2, 0);
+            Point3d minPoint = new Point3d(mittelplate.CargoHoldBasePont.X-4000, -width / 2, 0);
             Point3d maxPoint = new Point3d(length, width / 2, height);
             // Create a box
             Box startBoxVessel = new Box(new BoundingBox(minPoint, maxPoint));
@@ -186,8 +182,8 @@ namespace MyRhinoPlugin1.commands
                 return null;
             }
             return startBoxVesselBrep;
-
         }
+
 
         private Brep drawVesselsHold()
         {
@@ -208,77 +204,6 @@ namespace MyRhinoPlugin1.commands
             return new Box(new BoundingBox(minPoint, maxPoint)).ToBrep();
 
         }
-
-
-
-        // Method to draw the vessel body. Here creare
-        private Curve drawVesselsCurve(string curveName, string filename)
-        {
-
-            string projectRoot = Directory.GetParent(Directory.GetCurrentDirectory()).Parent.Parent.FullName;
-            string path = Path.Combine(projectRoot, "vesselsDigitalModels", filename);
-            RhinoApp.WriteLine(path);
-            // Check if the file exists
-            if (!File.Exists(path))
-            {
-                RhinoApp.WriteLine($"Error: File not found at {path}");
-                return null;
-
-            }
-            List<Point3d> pointsCollection = service.ReadPointsFromTxt.PointsReader(path);
-            service.CerveCreator curveCreator = new service.CerveCreator(curveName, pointsCollection);
-            Curve curve = curveCreator.CreateSafeCurve();
-
-            // Make sure curve is valid and closed
-            if (curve == null || !curve.IsClosed)
-            {
-                RhinoApp.WriteLine("Curve is null or not closed.");
-                return null;
-            }
-            return curve;
-        }
-
-        private Brep drawVesselBaseFromSideView(RhinoDoc doc, string pathFileName)
-        {
-            Curve sideCurve = drawVesselsCurve("sideCurve", pathFileName);  
-            double offset = -mittelplate.VesselsBreadth / 2.0;
-            Transform move = Transform.Translation(0, offset, 0);
-            sideCurve.Transform(move);
-             
-
-            // create extrusion
-            double breathExtrude = mittelplate.VesselsBreadth;
-            Vector3d vectorToSBSide = new Vector3d(0, breathExtrude, 0);
-
-            Brep SBSideBrep = service.Operations3D.BrepCreator.CreateExtrudedBrep(sideCurve, vectorToSBSide);
-            if (SBSideBrep == null)
-            {
-                RhinoApp.WriteLine("Error: extrusion creation failed. = > drawVesselBaseFromSideView");
-                return null;
-            }
-
-            return SBSideBrep; 
-        }
-
-        private Brep drawVesselBaseFromTopView(RhinoDoc doc, string pathFileName)
-        {
-            Curve topCurve = drawVesselsCurve("topCurve", pathFileName);   
-
-
-            // create extrusion
-            double  extrude = mittelplate.VesselsHeight;
-            Vector3d vector  = new Vector3d(0, 0, extrude * 2);
-
-            Brep topBrep = service.Operations3D.BrepCreator.CreateExtrudedBrep(topCurve, vector);
-            if (topBrep == null)
-            {
-                RhinoApp.WriteLine("Error: extrusion creation failed. = > drawVesselBaseFromTopView");
-                return null;
-            }
-
-            return topBrep;
-        }
-
     }
 }
 

@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using MyRhinoPlugin1.models; 
+using MyRhinoPlugin1.models;
 
-namespace MyRhinoPlugin1
+namespace MyRhinoPlugin1.controllers.importController
 {
     public class ImportController
     {

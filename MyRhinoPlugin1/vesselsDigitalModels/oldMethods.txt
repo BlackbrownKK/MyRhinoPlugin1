@@ -1,0 +1,238 @@
+﻿private Brep drawVesselBaseFromTopView(RhinoDoc doc, string pathFileName)
+        {
+            Curve topCurve = drawVesselsCurve("topCurve", pathFileName);   
+
+
+            // create extrusion
+            double  extrude = mittelplate.VesselsHeight;
+            Vector3d vector  = new Vector3d(0, 0, extrude * 2);
+
+            Brep topBrep = service.Operations3D.BrepCreator.CreateExtrudedBrep(topCurve, vector);
+            if (topBrep == null)
+            {
+                RhinoApp.WriteLine("Error: extrusion creation failed. = > drawVesselBaseFromTopView");
+                return null;
+            }
+
+            return topBrep;
+        }
+
+
+
+         private Brep drawBaseFromCurves(RhinoDoc doc) // todo
+        {
+
+
+            List<PointsCollection> plates = getAllSegments();
+            if (plates == null || plates.Count < 2)
+            {
+                RhinoApp.WriteLine("Error: Not enough plates to generate a surface.");
+                return null;
+            }
+
+            // Validate the curves and collect them for lofting
+            List<Curve> validCurves = new List<Curve>();
+            foreach (var plate in plates)
+            {
+                if (plate.CrosSectionPoints == null || !plate.CrosSectionPoints.IsValid)
+                {
+                    RhinoApp.WriteLine($"Invalid curve in segment: {plate.Name}");
+                    continue;
+                }
+
+                validCurves.Add(plate.CrosSectionPoints);
+            }
+
+            if (validCurves.Count < 2)
+            {
+                RhinoApp.WriteLine("Error: Not enough valid curves to create a loft.");
+                return null;
+            }
+
+            // Loft the curves to form a Brep
+            Brep[] breps = Brep.CreateFromLoft(validCurves, Point3d.Unset, Point3d.Unset, LoftType.Normal, false);
+            if (breps == null || breps.Length == 0)
+            {
+                RhinoApp.WriteLine("Error: Failed to create Brep from loft.");
+                return null;
+            }
+
+            // Optionally, add the Brep to the document
+            Guid id = doc.Objects.AddBrep(breps[0]);
+            if (id == Guid.Empty)
+            {
+                RhinoApp.WriteLine("Error: Failed to add Brep to document.");
+                return null;
+            }
+
+            return breps[0];
+
+        }
+
+
+                private Brep drawBaseBox()
+        {
+            double length = mittelplate.VesselsLengthOA*1.2;
+            double width = mittelplate.VesselsBreadth*1.2;
+            double height = mittelplate.VesselsHeight *1.2;
+            // Calculate bounding box corners
+            Point3d minPoint = new Point3d(0, -width / 2, 0);
+            Point3d maxPoint = new Point3d(length, width / 2, height);
+            // Create a box
+            Box startBoxVessel = new Box(new BoundingBox(minPoint, maxPoint));
+            // Create a Brep from the box
+            Brep startBoxVesselBrep = startBoxVessel.ToBrep();
+            // Check if the Brep is valid
+            if (startBoxVesselBrep == null || !startBoxVesselBrep.IsValid)
+            {
+                RhinoApp.WriteLine("Error: Failed to create a valid Brep from the box.");
+                return null;
+            }
+            return startBoxVesselBrep;
+
+        }
+
+
+
+          /*
+        private List<PointsCollection> getAllSegments ()  
+        {
+
+            string filename = "srosSectionPointsList.txt";
+            string projectRoot = Directory.GetParent(Directory.GetCurrentDirectory()).Parent.Parent.FullName;
+            string path = Path.Combine(projectRoot, "vesselsDigitalModels", filename);
+            // Check if the file exists
+            if (!File.Exists(path))
+            {
+                RhinoApp.WriteLine($"Error: File not found at {path}");
+                return null;
+
+            }
+
+            return Points2FromTxtReader.PlatesReader(path);
+        }
+
+
+          private void drawVesselBaseVromCurve(RhinoDoc doc)
+        {
+            CurvesFromTxtReaderController curvesFromTxtReaderController = new CurvesFromTxtReaderController();
+
+            string projectRoot = Directory.GetParent(Directory.GetCurrentDirectory()).Parent.Parent.FullName;
+            string path = Path.Combine(projectRoot, "vesselsDigitalModels", "MainHull.txt");
+            List<Curve> allCurves = curvesFromTxtReaderController.PlatesReader(path)
+                .Where(curve => curve != null && curve.IsValid)
+                .ToList();
+            foreach (Curve curve in allCurves)
+            {
+                if (curve != null)
+                {
+                    // Add the curve to the document and get the Guid of the object
+                    Guid objGuid = doc.Objects.AddCurve(curve);
+                    // Get the RhinoObject associated with the Guid
+                    RhinoObject objTemp = doc.Objects.Find(objGuid);
+                    if (objTemp != null)
+                    {
+                        // Get the layer index of the "TD" layer
+                        Layer vesselTDLayerTemp = doc.Layers.FindName("vesselConstruction");
+                        // Assign the Brep to the "TD" layer
+                        //objTemp.Attributes.LayerIndex = vesselTDLayerTemp.Index;
+                        objTemp.Attributes.Name = "MainHull";
+                        // Commit changes to the object
+                        objTemp.CommitChanges();
+                    }
+                }
+            } 
+           
+        }
+
+            private Brep drawVesselBase(RhinoDoc doc)
+        {
+            string SideCurveMittelplateBody = "SideCurveMittelplateBody.txt";
+            Brep side = drawVesselBaseFromSideView(doc, SideCurveMittelplateBody);
+            return side;
+        }
+
+
+        private List<Brep> CreateLoftedBrepsFromCurves(List<Curve> curves)
+            {
+                var breps = new List<Brep>();
+
+                // Ensure we have at least two curves to loft between
+                if (curves == null || curves.Count < 2)
+                    return breps;
+
+                for (int i = 0; i < curves.Count - 1; i++)
+                {
+                    Curve c1 = curves[i];
+                    Curve c2 = curves[i + 1];
+
+                    var loftCurves = new List<Curve> { c1, c2 };
+
+                    var loftedBreps = Brep.CreateFromLoft(
+                        loftCurves,
+                        Point3d.Unset,
+                        Point3d.Unset,
+                        LoftType.Normal,
+                        false
+                    );
+
+                    if (loftedBreps != null && loftedBreps.Length > 0)
+                        breps.AddRange(loftedBreps);
+                }
+
+                return breps;
+            }
+
+                // Method to draw the vessel body. Here creare
+        private Curve drawVesselsCurve(string curveName, string filename)
+        {
+  
+
+            string projectRoot = Directory.GetParent(Directory.GetCurrentDirectory()).Parent.Parent.FullName;
+            string path = Path.Combine(projectRoot, "vesselsDigitalModels", filename);
+
+            // Check if the file exists
+            if (!File.Exists(path))
+            {
+                RhinoApp.WriteLine($"Error: File not found at {path}");
+                return null;
+
+            }
+
+
+            List<Point3d> pointsCollection = controllers.PointsFromTxtReader.PointsReader(path);
+
+            service.CerveCreator curveCreator = new service.CerveCreator(curveName, pointsCollection);
+            Curve curve = curveCreator.CreateSafeCurve();
+
+            // Make sure curve is valid and closed
+            if (curve == null || !curve.IsClosed)
+            {
+                RhinoApp.WriteLine("Curve is null or not closed.");
+                return null;
+            }
+            return curve;
+        }
+
+
+        private Brep drawVesselBaseFromSideView(RhinoDoc doc, string pathFileName)
+        {
+            Curve sideCurve = drawVesselsCurve("sideCurve", pathFileName);  
+            double offset = -mittelplate.VesselsBreadth / 2.0;
+            Transform move = Transform.Translation(0, offset, 0);
+            sideCurve.Transform(move);
+             
+
+            // create extrusion
+            double breathExtrude = mittelplate.VesselsBreadth;
+            Vector3d vectorToSBSide = new Vector3d(0, breathExtrude, 0);
+
+            Brep SBSideBrep = service.Operations3D.BrepCreator.CreateExtrudedBrep(sideCurve, vectorToSBSide);
+            if (SBSideBrep == null)
+            {
+                RhinoApp.WriteLine("Error: extrusion creation failed. = > drawVesselBaseFromSideView");
+                return null;
+            }
+
+            return SBSideBrep; 
+        } 

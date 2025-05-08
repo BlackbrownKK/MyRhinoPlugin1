@@ -24,12 +24,12 @@ namespace MyRhinoPlugin1.commands
 
         protected override Result RunCommand(RhinoDoc doc, RunMode mode)
         {
-            customViewsMaker(doc, mode);
+            custom2ViewsMaker(doc, mode);
             return Result.Success;
         }
 
 
-        public static void customViewsMaker(RhinoDoc doc, RunMode mode)
+        public static void custom4ViewsMaker(RhinoDoc doc, RunMode mode)
         {
 
   
@@ -65,6 +65,32 @@ namespace MyRhinoPlugin1.commands
                 v.ActiveViewport.ZoomExtents();
             }
 
+        }
+
+        public static void custom2ViewsMaker(RhinoDoc doc, RunMode mode)
+        {
+
+            // Close all existing views
+            foreach (var view in doc.Views)
+                view.Close();
+            var views = doc.Views.GetViewList(true, false);
+
+            // Create first view (Side / Front)
+            var sideView = doc.Views.Add(SideViewName, DefinedViewportProjection.Front, new System.Drawing.Rectangle(0, 0, 1500, 400), false);
+            sideView.ActiveViewport.Name = SideViewName;
+            views[0] = sideView;
+            views[0].Redraw();
+
+          
+
+            // Create second view (Top) below it
+            var topView = doc.Views.Add(TopViewName, DefinedViewportProjection.Top, new System.Drawing.Rectangle(0, 400, 1500, 400), false);
+            topView.ActiveViewport.Name = TopViewName;
+            topView.Redraw();
+
+            // Zoom all
+            sideView.ActiveViewport.ZoomExtents();
+            topView.ActiveViewport.ZoomExtents();
         }
     }
 }

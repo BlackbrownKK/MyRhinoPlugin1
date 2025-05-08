@@ -22,8 +22,6 @@ namespace MyRhinoPlugin1
             Instance = this;
         }
 
-        // todo cross section ! aft + side 
-
         public static MyRhinoPlugin1Plugin Instance { get; private set; }
 
         private static CrossSectionMouseListener _mouseListener;
@@ -31,7 +29,16 @@ namespace MyRhinoPlugin1
         {
             _mouseListener = new CrossSectionMouseListener();
             _mouseListener.Enabled = true;
+
+/* Unmerged change from project 'MyRhinoPlugin1 (net7.0)'
+Before:
             behavior.CollisionGuard.Enable();
+            return LoadReturnCode.Success;
+After:
+            CollisionGuard.Enable();
+            return LoadReturnCode.Success;
+*/
+            behavior.collision.CollisionGuard.Enable();
             return LoadReturnCode.Success;
         }
 

@@ -10,7 +10,7 @@ using Microsoft.Win32;
 using Rhino.UI;
 using MyRhinoPlugin1.commands;
 
-namespace MyRhinoPlugin1.service
+namespace MyRhinoPlugin1.behavior.gravity
 {
     public static class GravityWatcher
     {
@@ -25,7 +25,7 @@ namespace MyRhinoPlugin1.service
             if (_enabled)
                 return;
 
-     
+
 
 
             //Avoids double-adding event handlers.
@@ -77,8 +77,8 @@ namespace MyRhinoPlugin1.service
 
             // Skip gravity if active viewport is Top
             var activeViewport = doc.Views.ActiveView.ActiveViewport;
-            if (activeViewport.IsParallelProjection && 
-                activeViewport.Name == CustomViewportLayoutCommand.TopViewName || 
+            if (activeViewport.IsParallelProjection &&
+                activeViewport.Name == CustomViewportLayoutCommand.TopViewName ||
                 activeViewport.Name == CustomViewportLayoutCommand.IsometricViewName)
                 return;
 
