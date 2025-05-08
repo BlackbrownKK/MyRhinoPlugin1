@@ -35,10 +35,10 @@ namespace MyRhinoPlugin1.commands
             {
                 cargoList.Add(new CargoModel()
                 {
-                    Weight = 1000,
-                    Length = 1000,
-                    Width = 1000,
-                    Height = 1000,
+                    Weight = 8000,
+                    Length = 5300,
+                    Width = 3500,
+                    Height = 3000,
                     Quentity = 1,
                     Name = "Cargo" + i
                 });

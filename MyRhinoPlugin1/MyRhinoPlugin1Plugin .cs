@@ -28,22 +28,10 @@ namespace MyRhinoPlugin1
         protected override LoadReturnCode OnLoad(ref string errorMessage)
         {
             _mouseListener = new CrossSectionMouseListener();
-            _mouseListener.Enabled = true;
+            _mouseListener.Enabled = true; 
 
-/* Unmerged change from project 'MyRhinoPlugin1 (net7.0)'
-Before:
-            behavior.CollisionGuard.Enable();
             return LoadReturnCode.Success;
-After:
-            CollisionGuard.Enable();
-            return LoadReturnCode.Success;
-*/
-            behavior.collision.CollisionGuard.Enable();
-            return LoadReturnCode.Success;
-        }
 
-        // New method to trigger the cross-section listener or handle actions
-
-        
+        } 
     }
 } 

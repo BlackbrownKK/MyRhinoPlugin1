@@ -14,9 +14,9 @@ namespace MyRhinoPlugin1.models
         public double CargoHoldWidth { get; set; }
         public double CargoHoldHeight { get; set; }
 
-        public double VesselsLengthOA { get; set; }
-        public double VesselsBreadth { get; set; }
-        public double VesselsHeight { get; set; }
+        public double VesselsHollLengthOA { get; set; }
+        public double VesselsHollBreadth { get; set; }
+        public double VesselsHollHeight { get; set; }
 
         public double TDAltitudeLowerPosition { get; set; }
         public double TDAltitudeUpperPosition { get; set; }
@@ -36,8 +36,8 @@ namespace MyRhinoPlugin1.models
             CargoHoldWidth = 0.0;
             CargoHoldHeight = 0.0;
 
-            VesselsLengthOA = 0.0;
-            VesselsBreadth = 0.0;
+            VesselsHollLengthOA = 0.0;
+            VesselsHollBreadth = 0.0;
 
             TDList = new List<TDModel>();
             VesselElements = new List<Brep>();

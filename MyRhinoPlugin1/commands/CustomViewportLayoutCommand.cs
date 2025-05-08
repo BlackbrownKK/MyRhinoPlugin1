@@ -12,7 +12,7 @@ namespace MyRhinoPlugin1.commands
 {
     public class CustomViewportLayoutCommand : Command
     {
-        public override string EnglishName => "CustomViews";
+        public override string EnglishName => "CustomViews"; 
 
         public static string IsometricViewName = "Isometric view";
         public static string SideViewName = "Side view";
@@ -24,11 +24,11 @@ namespace MyRhinoPlugin1.commands
 
         protected override Result RunCommand(RhinoDoc doc, RunMode mode)
         {
-            custom2ViewsMaker(doc, mode);
+            custom3ViewsMaker(doc);
             return Result.Success;
         }
 
-
+        /*
         public static void custom4ViewsMaker(RhinoDoc doc, RunMode mode)
         {
 
@@ -66,27 +66,48 @@ namespace MyRhinoPlugin1.commands
             }
 
         }
+        */
 
-        public static void custom2ViewsMaker(RhinoDoc doc, RunMode mode)
+        public static void custom3ViewsMaker(RhinoDoc doc)
         {
-
+             
             // Close all existing views
             foreach (var view in doc.Views)
                 view.Close();
             var views = doc.Views.GetViewList(true, false);
 
-            // Create first view (Side / Front)
-            var sideView = doc.Views.Add(SideViewName, DefinedViewportProjection.Front, new System.Drawing.Rectangle(0, 0, 1500, 400), false);
+            // Create first view (Side view)
+            var sideView = doc.Views.Add(SideViewName, DefinedViewportProjection.Front, new System.Drawing.Rectangle(0, 0, 1700, 400), false);
             sideView.ActiveViewport.Name = SideViewName;
             views[0] = sideView;
             views[0].Redraw();
 
-          
+            // Create second view (Fwd view) below it
+            var fwdView = doc.Views.Add(FwdViewName, DefinedViewportProjection.Right, new System.Drawing.Rectangle(1000, 0, 300, 400), false);
+            fwdView.ActiveViewport.Name = FwdViewName;  
+            fwdView.Redraw();
 
-            // Create second view (Top) below it
-            var topView = doc.Views.Add(TopViewName, DefinedViewportProjection.Top, new System.Drawing.Rectangle(0, 400, 1500, 400), false);
+            // Create second view (Top view) below it
+        
+            var topView = doc.Views.Add(TopViewName, DefinedViewportProjection.Top, new System.Drawing.Rectangle(0, 400, 2000, 400), false);  
+
             topView.ActiveViewport.Name = TopViewName;
             topView.Redraw();
+
+
+            foreach (var view in doc.Views)
+            {
+                if (view.ActiveViewport.Name.ToLower().Contains("Right"))
+                {
+                    view.Close();
+                }
+            }
+
+
+            foreach (var view in doc.Views)
+            {
+                RhinoApp.WriteLine($" - {view.ActiveViewport.Name}");
+            }
 
             // Zoom all
             sideView.ActiveViewport.ZoomExtents();

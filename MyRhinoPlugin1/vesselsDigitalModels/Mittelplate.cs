@@ -37,9 +37,9 @@ namespace MyRhinoPlugin1.vesselsDigitalModels
             CargoHoldLength = 59250;
             CargoHoldWidth = 10200;
             CargoHoldHeight = 8472;
-            VesselsBreadth = 12400;
-            VesselsLengthOA = 86000;
-            VesselsHeight = 9100; 
+            VesselsHollBreadth = 12400;
+            VesselsHollLengthOA = 86000;
+            VesselsHollHeight = 9450; 
             FuelTankLength = 1500;
             FuelTankWidth = 2500;
             FuelTankHeight = 2550;

@@ -14,6 +14,7 @@ using Rhino.Geometry;
 
 using Rhino.UI;
 using MyRhinoPlugin1.controllers.importController;
+using System.ComponentModel;
 
 
 
@@ -24,16 +25,16 @@ namespace MyRhinoPlugin1.commands
         Mittelplate mittelplate;
 
         public BuildVesselModel()
-        { 
+        {
             Instance = this;
             mittelplate = new Mittelplate();
-        } 
+        }
 
         public static BuildVesselModel Instance { get; private set; }
-         
- 
+
+
         public override string EnglishName => "BuildModel";
-         
+
         protected override Result RunCommand(RhinoDoc doc, RunMode mode)
         {
 
@@ -45,8 +46,8 @@ namespace MyRhinoPlugin1.commands
             {
                 RhinoApp.WriteLine("Error: Boolean operations failed.");
                 return Result.Failure;
-            } 
-            string layerName = "vesselConstruction"; 
+            }
+            string layerName = "vesselConstruction";
             Layer vesselLayer = service.LayerService.GetOrCreateLayer(doc, layerName);
             // Set the layer visibility to off
             vesselLayer.IsVisible = true;
@@ -67,12 +68,12 @@ namespace MyRhinoPlugin1.commands
                     // Assign the Brep to the "vesselConstruction" layer
                     objTemp.Attributes.LayerIndex = vesselConstructionTemp.Index;
                     objTemp.Attributes.Name = "vesselConstruction";
-                    vesselConstructionTemp.IsLocked = false;
+                    vesselConstructionTemp.IsLocked = true;
                     // Commit changes to the object
                     objTemp.CommitChanges();
                 }
             }
-            
+
             // Create the "TD" layer if it doesn't exist
             string layerTDName = "TD";
 
@@ -87,7 +88,7 @@ namespace MyRhinoPlugin1.commands
             Layer vesselTDLayer = service.LayerService.GetOrCreateLayer(doc, layerTDName);
             // Set the layer visibility to off
             vesselTDLayer.IsVisible = true;
-            vesselTDLayer.IsLocked = false;
+            vesselTDLayer.IsLocked = true;
             List<TDModel> TDList = new List<TDModel>();
             TDObjectCreator tDObjectCreator = new TDObjectCreator();
             TDList = tDObjectCreator.TDBrepCreator(mittelplate.TDList);
@@ -110,15 +111,19 @@ namespace MyRhinoPlugin1.commands
                     objTemp.CommitChanges();
                     doc.Views.Redraw();
                     RhinoDoc.ActiveDoc.Views.Redraw();
+
+
+                  
                 }
             }
 
-            
+
+            drawBlockViews(doc);
 
 
             // Set the singleton instance of DataModelHolder
             DataModelHolder.Instance.Vessel = mittelplate;
-            CustomViewportLayoutCommand.custom2ViewsMaker(doc, mode);
+ 
             doc.Views.Redraw();
 
             foreach (var v in doc.Views.GetViewList(true, false))
@@ -126,14 +131,50 @@ namespace MyRhinoPlugin1.commands
                 v.ActiveViewport.ZoomExtents();
                 v.Redraw();
             }
+
+
+
+            behavior.collision.CollisionGuard.Enable();
+            behavior.gravity.GravityWatcher.Enable();
+            userInterface.CustomRhinoToolsBarInterface.CustomAllPannels(doc);
+        
             return Result.Success;
+        }
+
+        private void drawBlockViews(RhinoDoc doc)
+        { 
+            string sideViewFileName = "sideViewMittelplateBlock.3dm";
+
+            string sideViewBlockName = "sideViewMittelplateBlock";
+            string topViewBlockName = "topViewMittelplateBlock";
+            string fwdViewBlockName = "FwdViewMittelplateBlock"; 
+
+            InstanceDefinition SideBlock  = OpenFilesWithBlockController.OpenFilesWithBlock(doc, sideViewFileName, sideViewBlockName);
+           // Add the block to the document and get the Guid of the object 
+            Guid objGuid = doc.Objects.AddInstanceObject(SideBlock.Index, Transform.Translation(0, 0, 0));
+            // Get the RhinoObject associated with the Guid
+            RhinoObject objTemp = doc.Objects.Find(objGuid);
+            objTemp.Attributes.LayerIndex = doc.Layers.FindName("vesselConstruction").Index;
+            objTemp.Attributes.Name = "sideViewMittelplateBlock";
+
+            InstanceDefinition TopBlock = OpenFilesWithBlockController.OpenFilesWithBlock(doc, sideViewFileName, topViewBlockName);
+            objGuid = doc.Objects.AddInstanceObject(TopBlock.Index, Transform.Translation(0, 0, 0));
+            objTemp = doc.Objects.Find(objGuid);
+            objTemp.Attributes.LayerIndex = doc.Layers.FindName("vesselConstruction").Index;
+            objTemp.Attributes.Name = "sideViewMittelplateBlock";
+
+            InstanceDefinition FwdView = OpenFilesWithBlockController.OpenFilesWithBlock(doc, sideViewFileName, fwdViewBlockName);
+            objGuid = doc.Objects.AddInstanceObject(FwdView.Index, Transform.Translation(0, 0, 0));
+            objTemp = doc.Objects.Find(objGuid);
+            objTemp.Attributes.LayerIndex = doc.Layers.FindName("vesselConstruction").Index;
+            objTemp.Attributes.Name = "sideViewMittelplateBlock";  
         }
 
 
         // Method to generate vessel geometry (Brep) and perform Boolean difference
         private Brep[] GenerateVesselGeometry(RhinoDoc doc, RunMode mode)
         {
-           
+
             Brep vesselBodyBrep = drawBaseBox();
             Brep vesselHoldBrep = drawVesselsHold();
 
@@ -156,20 +197,40 @@ namespace MyRhinoPlugin1.commands
                 RhinoApp.WriteLine("Error: Boolean difference failed.");
                 return null;
             }
+            // add here Brep mittelplate.FuelTankPS + mittelplate.FuelTankSB + mittelplate.FWRObliquePS +  mittelplate.FWRObliqueSB
+            var additionalParts = new List<Brep>
+            {
+                mittelplate.FuelTankPS,
+                mittelplate.FuelTankSB,
+                mittelplate.FWRObliquePS,
+                mittelplate.FWRObliqueSB
+            };
+            // Combine with difference result
+            additionalParts.AddRange(differenceResult);
+
+
+            // Perform Boolean Union 
+            Brep[] finalUnion = service.Operations3D.BooleanUnionOperations.PerformBooleanUnion(additionalParts, doc);
+
+            if (finalUnion == null || finalUnion.Length == 0)
+            {
+                RhinoApp.WriteLine("Error: Boolean union failed.");
+                return null;
+            }
 
             // Return the final unioned Brep(s)
-            return differenceResult;
+            return finalUnion;
         }
 
 
         private Brep drawBaseBox()
         {
 
-            double length = mittelplate.CargoHoldLength + 16000;
-            double width = mittelplate.VesselsBreadth;
-            double height = mittelplate.VesselsHeight;
+            double length = mittelplate.CargoHoldLength + 15000;
+            double width = mittelplate.VesselsHollBreadth;
+            double height = mittelplate.VesselsHollHeight;
             // Calculate bounding box corners
-            Point3d minPoint = new Point3d(mittelplate.CargoHoldBasePont.X-4000, -width / 2, 0);
+            Point3d minPoint = new Point3d(mittelplate.CargoHoldBasePont.X - 1000, -width / 2, 0);
             Point3d maxPoint = new Point3d(length, width / 2, height);
             // Create a box
             Box startBoxVessel = new Box(new BoundingBox(minPoint, maxPoint));

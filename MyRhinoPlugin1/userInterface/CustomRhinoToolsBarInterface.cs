@@ -5,16 +5,17 @@ using System.Text;
 
 using Rhino;
 using Rhino.UI;
+using MyRhinoPlugin1.commands;
 
 namespace MyRhinoPlugin1.userInterface
 {
     public class CustomRhinoToolsBarInterface
     {
 
-        public static void CustomAllPannels()
+        public static void CustomAllPannels(RhinoDoc doc)
         {
             CloseAllToolbars();
-            plaginToolBarButtonCreator();
+            CustomViewportLayoutCommand.custom3ViewsMaker(doc);
         }
 
 
@@ -37,9 +38,6 @@ namespace MyRhinoPlugin1.userInterface
 
             ToolbarFileCollection.SidebarIsVisible = false;
         }
-        private static void plaginToolBarButtonCreator()
-        {
-            
-        }
+     
     }
 } 

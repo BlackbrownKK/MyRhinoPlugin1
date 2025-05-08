@@ -33,7 +33,7 @@ After:
                 userInterface.CustomRhinoToolsBarInterface.CustomAllPannels();
 */
                 behavior.gravity.GravityWatcher.Enable();
-                userInterface.CustomRhinoToolsBarInterface.CustomAllPannels();
+               
             }
             else
             {
