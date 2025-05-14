@@ -59,14 +59,13 @@ namespace MyRhinoPlugin1.controllers
 
                     if (!originSet && geo is Point point)
                     {
-                        blockOrigin = point.Location;
+                        //blockOrigin = point.Location;
                         originSet = true;
                     }
 
                     var attr = new ObjectAttributes
                     {
                         Name = fileObj.Attributes.Name,
-                        LayerIndex = doc.Layers.CurrentLayerIndex
                     };
 
                     geometryList.Add(geo);
@@ -87,7 +86,10 @@ namespace MyRhinoPlugin1.controllers
                 return null;
             }
 
-            return doc.InstanceDefinitions[newDefIndex];
+            InstanceDefinition definition = doc.InstanceDefinitions[newDefIndex];
+            RhinoApp.WriteLine($"Loaded block: {blockName} + X: {blockOrigin.X} + Y:{blockOrigin.Y} + Z:{blockOrigin.Z}  ");
+            // Return the block definition
+            return definition;
         }
     }
 }

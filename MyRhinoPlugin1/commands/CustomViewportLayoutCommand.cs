@@ -70,34 +70,36 @@ namespace MyRhinoPlugin1.commands
 
         public static void custom3ViewsMaker(RhinoDoc doc)
         {
-             
+            var shadedMode = DisplayModeDescription.FindByName("Shaded");
+
             // Close all existing views
             foreach (var view in doc.Views)
                 view.Close();
             var views = doc.Views.GetViewList(true, false);
 
             // Create first view (Side view)
-            var sideView = doc.Views.Add(SideViewName, DefinedViewportProjection.Front, new System.Drawing.Rectangle(0, 0, 1700, 400), false);
+            var sideView = doc.Views.Add(SideViewName, DefinedViewportProjection.Front, new System.Drawing.Rectangle(0, 0, 1600, 400), false);
             sideView.ActiveViewport.Name = SideViewName;
             views[0] = sideView;
             views[0].Redraw();
 
             // Create second view (Fwd view) below it
-            var fwdView = doc.Views.Add(FwdViewName, DefinedViewportProjection.Right, new System.Drawing.Rectangle(1000, 0, 300, 400), false);
-            fwdView.ActiveViewport.Name = FwdViewName;  
+            var fwdView = doc.Views.Add(FwdViewName, DefinedViewportProjection.Right, new System.Drawing.Rectangle(1600, 0, 400, 400), false);
+            fwdView.ActiveViewport.Name = FwdViewName;
+            fwdView.ActiveViewport.DisplayMode = shadedMode;
             fwdView.Redraw();
 
             // Create second view (Top view) below it
         
             var topView = doc.Views.Add(TopViewName, DefinedViewportProjection.Top, new System.Drawing.Rectangle(0, 400, 2000, 400), false);  
-
-            topView.ActiveViewport.Name = TopViewName;
+            topView.ActiveViewport.Name = TopViewName; 
+            topView.ActiveViewport.DisplayMode = shadedMode;
             topView.Redraw();
 
 
             foreach (var view in doc.Views)
             {
-                if (view.ActiveViewport.Name.ToLower().Contains("Right"))
+                if (view.ActiveViewport.Name.Contains("Right"))
                 {
                     view.Close();
                 }

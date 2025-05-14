@@ -3,8 +3,8 @@ using Rhino.UI;
 using MyRhinoPlugin1.userInterface;
 using Eto.Drawing;  // Use Eto for cross-platform UI
 using System.Drawing;
-using MyRhinoPlugin1.commands;
 using Rhino;
+using MyRhinoPlugin1.behavior.visualView;
 namespace MyRhinoPlugin1
 {
     ///<summary>

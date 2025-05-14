@@ -7,6 +7,8 @@ using MyRhinoPlugin1.data;
 using MyRhinoPlugin1.models;
 using MyRhinoPlugin1.controllers;
 using MyRhinoPlugin1.vesselsDigitalModels;
+using MyRhinoPlugin1.behavior.collision;
+using MyRhinoPlugin1.behavior.gravity;
 using Rhino;
 using Rhino.Commands;
 using Rhino.DocObjects;
@@ -23,6 +25,7 @@ namespace MyRhinoPlugin1.commands
     public class BuildVesselModel : Command
     {
         Mittelplate mittelplate;
+        Layer vesselConstructionLayer;
 
         public BuildVesselModel()
         {
@@ -48,10 +51,9 @@ namespace MyRhinoPlugin1.commands
                 return Result.Failure;
             }
             string layerName = "vesselConstruction";
-            Layer vesselLayer = service.LayerService.GetOrCreateLayer(doc, layerName);
+             vesselConstructionLayer = service.LayerService.GetOrCreateLayer(doc, layerName);
             // Set the layer visibility to off
-            vesselLayer.IsVisible = true;
-            vesselLayer.IsLocked = false;
+         
 
             // Add the final unioned Brep(s) to the document, assign them to the new layer
             foreach (Brep brep in finalBrepResult)
@@ -74,17 +76,36 @@ namespace MyRhinoPlugin1.commands
                 }
             }
 
+
+            List<InstanceDefinition> blocksViews =  drawBlockViews(doc);
+
+            foreach (InstanceDefinition block in blocksViews)
+            {
+
+                Guid objGuid = doc.Objects.AddInstanceObject(block.Index, Transform.Identity);
+                RhinoObject objTemp = doc.Objects.Find(objGuid);
+                if (objTemp != null)
+                {
+                    Layer vesselConstructionTemp = doc.Layers.FindName("vesselConstruction");
+                    // Assign the Brep to the "vesselConstruction" layer
+                    objTemp.Attributes.LayerIndex = vesselConstructionTemp.Index;
+                    objTemp.Attributes.Name = "vesselConstruction";
+                    vesselConstructionTemp.IsLocked = true;
+                    // Commit changes to the object
+                    objTemp.CommitChanges();
+                }
+            }
+
+
+
+            // Lock the layer AFTER all objects are assigned
+            vesselConstructionLayer.IsVisible = true;
+            vesselConstructionLayer.IsLocked = false;
+
             // Create the "TD" layer if it doesn't exist
             string layerTDName = "TD";
 
-            /* Unmerged change from project 'MyRhinoPlugin1 (net7.0)'
-            Before:
-                        Layer vesselTDLayer = utilites.LayerService.GetOrCreateLayer(doc, layerTDName);
-                        // Set the layer visibility to off
-            After:
-                        Layer vesselTDLayer = LayerService.GetOrCreateLayer(doc, layerTDName);
-                        // Set the layer visibility to off
-            */
+   
             Layer vesselTDLayer = service.LayerService.GetOrCreateLayer(doc, layerTDName);
             // Set the layer visibility to off
             vesselTDLayer.IsVisible = true;
@@ -118,7 +139,7 @@ namespace MyRhinoPlugin1.commands
             }
 
 
-            drawBlockViews(doc);
+            
 
 
             // Set the singleton instance of DataModelHolder
@@ -134,40 +155,46 @@ namespace MyRhinoPlugin1.commands
 
 
 
-            behavior.collision.CollisionGuard.Enable();
-            behavior.gravity.GravityWatcher.Enable();
+            CollisionGuard.Enable();
+            GravityWatcher.Enable();
             userInterface.CustomRhinoToolsBarInterface.CustomAllPannels(doc);
         
             return Result.Success;
         }
 
-        private void drawBlockViews(RhinoDoc doc)
-        { 
-            string sideViewFileName = "sideViewMittelplateBlock.3dm";
 
-            string sideViewBlockName = "sideViewMittelplateBlock";
-            string topViewBlockName = "topViewMittelplateBlock";
-            string fwdViewBlockName = "FwdViewMittelplateBlock"; 
 
-            InstanceDefinition SideBlock  = OpenFilesWithBlockController.OpenFilesWithBlock(doc, sideViewFileName, sideViewBlockName);
-           // Add the block to the document and get the Guid of the object 
-            Guid objGuid = doc.Objects.AddInstanceObject(SideBlock.Index, Transform.Translation(0, 0, 0));
-            // Get the RhinoObject associated with the Guid
-            RhinoObject objTemp = doc.Objects.Find(objGuid);
-            objTemp.Attributes.LayerIndex = doc.Layers.FindName("vesselConstruction").Index;
-            objTemp.Attributes.Name = "sideViewMittelplateBlock";
+        private List<InstanceDefinition> drawBlockViews(RhinoDoc doc)
+        {
+            var resultList = new List<InstanceDefinition>();
 
-            InstanceDefinition TopBlock = OpenFilesWithBlockController.OpenFilesWithBlock(doc, sideViewFileName, topViewBlockName);
-            objGuid = doc.Objects.AddInstanceObject(TopBlock.Index, Transform.Translation(0, 0, 0));
-            objTemp = doc.Objects.Find(objGuid);
-            objTemp.Attributes.LayerIndex = doc.Layers.FindName("vesselConstruction").Index;
-            objTemp.Attributes.Name = "sideViewMittelplateBlock";
+            string viewFileName = "viewsMittelplateBlock.3dm";
 
-            InstanceDefinition FwdView = OpenFilesWithBlockController.OpenFilesWithBlock(doc, sideViewFileName, fwdViewBlockName);
-            objGuid = doc.Objects.AddInstanceObject(FwdView.Index, Transform.Translation(0, 0, 0));
-            objTemp = doc.Objects.Find(objGuid);
-            objTemp.Attributes.LayerIndex = doc.Layers.FindName("vesselConstruction").Index;
-            objTemp.Attributes.Name = "sideViewMittelplateBlock";  
+            var blockNames = new[]
+            {
+        "sideViewMittelplateBlock",
+        "topViewMittelplateBlock",
+        "FwdViewMittelplateBlock"
+    };
+            
+
+            foreach (var blockName in blockNames)
+            {
+                var block = OpenFilesWithBlockController.OpenFilesWithBlock(doc, viewFileName, blockName);
+                if (block != null)
+                { 
+                    resultList.Add(block);
+                
+                   
+                   
+                }
+                else
+                {
+                    RhinoApp.WriteLine($"Failed to load block: {blockName}");
+                }
+            }
+
+            return resultList;
         }
 
 
