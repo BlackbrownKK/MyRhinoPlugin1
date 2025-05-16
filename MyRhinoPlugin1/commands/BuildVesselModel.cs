@@ -13,10 +13,12 @@ using Rhino;
 using Rhino.Commands;
 using Rhino.DocObjects;
 using Rhino.Geometry;
-
+using MyRhinoPlugin1.behavior.visualView;
 using Rhino.UI;
 using MyRhinoPlugin1.controllers.importController;
 using System.ComponentModel;
+using Rhino.Render.CustomRenderMeshes;
+using Rhino.Display;
 
 
 
@@ -26,7 +28,7 @@ namespace MyRhinoPlugin1.commands
     {
         Mittelplate mittelplate;
         Layer vesselConstructionLayer;
-
+        private static CrossSectionMouseListener _mouseListener;
         public BuildVesselModel()
         {
             Instance = this;
@@ -40,6 +42,12 @@ namespace MyRhinoPlugin1.commands
 
         protected override Result RunCommand(RhinoDoc doc, RunMode mode)
         {
+            // Check if the vessel is loaded in the singleton
+            if (DataModelHolder.Instance.Vessel != null)
+            {
+                RhinoApp.WriteLine("Vessel is already loaded in the data model.");
+                return Result.Failure;
+            }
 
             // Generate the 3D objects and perform Boolean operations
             Brep[] finalBrepResult = GenerateVesselGeometry(doc, mode);
@@ -52,8 +60,13 @@ namespace MyRhinoPlugin1.commands
             }
             string layerName = "vesselConstruction";
              vesselConstructionLayer = service.LayerService.GetOrCreateLayer(doc, layerName);
+            vesselConstructionLayer.ModelIsVisible = false; // Set the layer visibility to off
+
+
+
+
             // Set the layer visibility to off
-         
+
 
             // Add the final unioned Brep(s) to the document, assign them to the new layer
             foreach (Brep brep in finalBrepResult)
@@ -71,6 +84,26 @@ namespace MyRhinoPlugin1.commands
                     objTemp.Attributes.LayerIndex = vesselConstructionTemp.Index;
                     objTemp.Attributes.Name = "vesselConstruction";
                     vesselConstructionTemp.IsLocked = true;
+                    vesselConstructionTemp.ModelIsVisible = false; // Set the layer visibility to off
+
+                    /*
+                    var material = new Material
+                    {
+                        DiffuseColor = System.Drawing.Color.Aqua,
+                        Transparency = 0.99 // 0 = opaque, 1 = fully transparent
+                    };
+                    
+                    // Apply display material to object
+                    // Add the material to the document and get its index
+                    int materialIndex = doc.Materials.Add(material);
+                    // Get the object attributes
+                    var attributes = objTemp.Attributes;
+                    attributes.MaterialSource = ObjectMaterialSource.MaterialFromObject;
+                    attributes.MaterialIndex = materialIndex; 
+                    // Apply modified attributes to the object
+                    doc.Objects.ModifyAttributes(objTemp, attributes, true);
+                    */
+                    doc.Views.Redraw();
                     // Commit changes to the object
                     objTemp.CommitChanges();
                 }
@@ -78,7 +111,8 @@ namespace MyRhinoPlugin1.commands
 
 
             List<InstanceDefinition> blocksViews =  drawBlockViews(doc);
-
+            string layerBlockViewsName = "vesselBlockViews";
+            Layer layerBlockViewsLayer = service.LayerService.GetOrCreateLayer(doc, layerBlockViewsName);
             foreach (InstanceDefinition block in blocksViews)
             {
 
@@ -86,11 +120,18 @@ namespace MyRhinoPlugin1.commands
                 RhinoObject objTemp = doc.Objects.Find(objGuid);
                 if (objTemp != null)
                 {
-                    Layer vesselConstructionTemp = doc.Layers.FindName("vesselConstruction");
+                    Layer vesselConstructionTemp = doc.Layers.FindName(layerBlockViewsName);
                     // Assign the Brep to the "vesselConstruction" layer
                     objTemp.Attributes.LayerIndex = vesselConstructionTemp.Index;
-                    objTemp.Attributes.Name = "vesselConstruction";
+                    objTemp.Attributes.Name = "blockVoews";
                     vesselConstructionTemp.IsLocked = true;
+
+                    if (block.Name.Equals("sideViewMittelplateBlock"))
+                    {
+                        // move the block to the right 
+                        Transform moveRight = Transform.Translation(new Vector3d(0, mittelplate.VesselsHollBreadth/2, 0));
+                        doc.Objects.Transform(objGuid, moveRight, true); // `true` = delete original
+                    }
                     // Commit changes to the object
                     objTemp.CommitChanges();
                 }
@@ -99,7 +140,7 @@ namespace MyRhinoPlugin1.commands
 
 
             // Lock the layer AFTER all objects are assigned
-            vesselConstructionLayer.IsVisible = true;
+            vesselConstructionLayer.IsVisible = false;
             vesselConstructionLayer.IsLocked = false;
 
             // Create the "TD" layer if it doesn't exist
@@ -142,8 +183,7 @@ namespace MyRhinoPlugin1.commands
             
 
 
-            // Set the singleton instance of DataModelHolder
-            DataModelHolder.Instance.Vessel = mittelplate;
+      
  
             doc.Views.Redraw();
 
@@ -158,7 +198,11 @@ namespace MyRhinoPlugin1.commands
             CollisionGuard.Enable();
             GravityWatcher.Enable();
             userInterface.CustomRhinoToolsBarInterface.CustomAllPannels(doc);
-        
+
+            _mouseListener = new CrossSectionMouseListener();
+            _mouseListener.Enabled = true;
+            // Set the singleton instance of DataModelHolder
+            DataModelHolder.Instance.Vessel = mittelplate;
             return Result.Success;
         }
 
@@ -252,24 +296,54 @@ namespace MyRhinoPlugin1.commands
 
         private Brep drawBaseBox()
         {
-
             double length = mittelplate.CargoHoldLength + 15000;
             double width = mittelplate.VesselsHollBreadth;
             double height = mittelplate.VesselsHollHeight;
+
             // Calculate bounding box corners
             Point3d minPoint = new Point3d(mittelplate.CargoHoldBasePont.X - 1000, -width / 2, 0);
             Point3d maxPoint = new Point3d(length, width / 2, height);
+
             // Create a box
             Box startBoxVessel = new Box(new BoundingBox(minPoint, maxPoint));
-            // Create a Brep from the box
             Brep startBoxVesselBrep = startBoxVessel.ToBrep();
-            // Check if the Brep is valid
+
             if (startBoxVesselBrep == null || !startBoxVesselBrep.IsValid)
             {
                 RhinoApp.WriteLine("Error: Failed to create a valid Brep from the box.");
                 return null;
             }
-            return startBoxVesselBrep;
+
+            double tolerance = RhinoDoc.ActiveDoc.ModelAbsoluteTolerance;
+            var edgesToFillet = new List<int>();
+
+            foreach (var edge in startBoxVesselBrep.Edges)
+            {
+                var curve = edge.EdgeCurve;
+                var start = curve.PointAtStart;
+                var end = curve.PointAtEnd;
+
+                bool isAtBottom = Math.Abs(start.Z) < tolerance && Math.Abs(end.Z) < tolerance;
+                bool isLongitudinal = Math.Abs(start.Y - end.Y) < tolerance;
+
+                if (isAtBottom && isLongitudinal)
+                {
+                    edgesToFillet.Add(edge.EdgeIndex);
+                }
+            }
+
+            double filletRadius = 1000; // Adjust this radius as needed
+            var filleted = Brep.CreateFilletEdges(
+                startBoxVesselBrep,
+                edgesToFillet,
+                Enumerable.Repeat(filletRadius, edgesToFillet.Count),
+                Enumerable.Repeat(filletRadius, edgesToFillet.Count),
+                BlendType.Fillet,
+                RailType.RollingBall,
+                tolerance
+            );
+
+            return filleted?.FirstOrDefault() ?? startBoxVesselBrep;
         }
 
 

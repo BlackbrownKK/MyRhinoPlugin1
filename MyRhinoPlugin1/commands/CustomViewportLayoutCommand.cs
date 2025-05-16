@@ -81,6 +81,7 @@ namespace MyRhinoPlugin1.commands
             var sideView = doc.Views.Add(SideViewName, DefinedViewportProjection.Front, new System.Drawing.Rectangle(0, 0, 1600, 400), false);
             sideView.ActiveViewport.Name = SideViewName;
             views[0] = sideView;
+            sideView.ActiveViewport.DisplayMode = shadedMode;
             views[0].Redraw();
 
             // Create second view (Fwd view) below it

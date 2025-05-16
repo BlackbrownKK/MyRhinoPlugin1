@@ -90,6 +90,11 @@ namespace MyRhinoPlugin1.commands
 
                     // Move the origin for the next box (if needed)
                     basePoint.X += cargo.Length + 1000; // Offset boxes in X direction
+                    // make a rendom color for the box
+      
+               
+                   
+                 
 
                     // Create and add the Brep representation of the box to the document
                     cargoCollection.Add(box.ToBrep());
@@ -128,6 +133,16 @@ namespace MyRhinoPlugin1.commands
                     // Assign the Brep to the "CargoLayer" layer
                     obj.Attributes.LayerIndex = cargoLayerTemp.Index;
                     obj.Attributes.Name = "CargoUnit";
+
+                    // Create a random color
+                    Random random = new Random();
+                    int r = random.Next(0, 256);
+                    int g = random.Next(0, 256);
+                    int b = random.Next(0, 256);
+                    System.Drawing.Color randomColor = System.Drawing.Color.FromArgb(r, g, b);
+                    // Set the color of the box
+                    obj.Attributes.ObjectColor = randomColor;
+                    obj.Attributes.ColorSource = ObjectColorSource.ColorFromObject;
                     // Commit changes to the object
                     obj.CommitChanges();
                 }

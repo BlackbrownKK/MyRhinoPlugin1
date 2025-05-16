@@ -63,10 +63,9 @@ namespace MyRhinoPlugin1.controllers
                         originSet = true;
                     }
 
-                    var attr = new ObjectAttributes
-                    {
-                        Name = fileObj.Attributes.Name,
-                    };
+                    var attr = fileObj.Attributes.Duplicate();
+
+                 
 
                     geometryList.Add(geo);
                     attributesList.Add(attr);
