@@ -28,6 +28,9 @@ namespace MyRhinoPlugin1.commands
     {
         Mittelplate mittelplate;
         Layer vesselConstructionLayer;
+        String sideViewMittelplateBlockName = "sideViewMittelplateBlock";
+        String topViewMittelplateBlockName = "topViewMittelplateBlock";
+        String FwdViewMittelplateBlockName = "FwdViewMittelplateBlock";
         private static CrossSectionMouseListener _mouseListener;
         public BuildVesselModel()
         {
@@ -61,19 +64,11 @@ namespace MyRhinoPlugin1.commands
             string layerName = "vesselConstruction";
              vesselConstructionLayer = service.LayerService.GetOrCreateLayer(doc, layerName);
             vesselConstructionLayer.ModelIsVisible = false; // Set the layer visibility to off
-
-
-
-
-            // Set the layer visibility to off
-
-
             // Add the final unioned Brep(s) to the document, assign them to the new layer
             foreach (Brep brep in finalBrepResult)
             {
                 // Add the Brep to the document and get the Guid of the object
                 Guid objGuid = doc.Objects.AddBrep(brep);
-
                 // Get the RhinoObject associated with the Guid
                 RhinoObject objTemp = doc.Objects.Find(objGuid);
 
@@ -84,64 +79,15 @@ namespace MyRhinoPlugin1.commands
                     objTemp.Attributes.LayerIndex = vesselConstructionTemp.Index;
                     objTemp.Attributes.Name = "vesselConstruction";
                     vesselConstructionTemp.IsLocked = true;
-                    vesselConstructionTemp.ModelIsVisible = false; // Set the layer visibility to off
-
-                    /*
-                    var material = new Material
-                    {
-                        DiffuseColor = System.Drawing.Color.Aqua,
-                        Transparency = 0.99 // 0 = opaque, 1 = fully transparent
-                    };
-                    
-                    // Apply display material to object
-                    // Add the material to the document and get its index
-                    int materialIndex = doc.Materials.Add(material);
-                    // Get the object attributes
-                    var attributes = objTemp.Attributes;
-                    attributes.MaterialSource = ObjectMaterialSource.MaterialFromObject;
-                    attributes.MaterialIndex = materialIndex; 
-                    // Apply modified attributes to the object
-                    doc.Objects.ModifyAttributes(objTemp, attributes, true);
-                    */
+                    vesselConstructionTemp.ModelIsVisible = false;
                     doc.Views.Redraw();
-                    // Commit changes to the object
                     objTemp.CommitChanges();
                 }
             }
 
 
-            List<InstanceDefinition> blocksViews =  drawBlockViews(doc);
-            string layerBlockViewsName = "vesselBlockViews";
-            Layer layerBlockViewsLayer = service.LayerService.GetOrCreateLayer(doc, layerBlockViewsName);
-            foreach (InstanceDefinition block in blocksViews)
-            {
-
-                Guid objGuid = doc.Objects.AddInstanceObject(block.Index, Transform.Identity);
-                RhinoObject objTemp = doc.Objects.Find(objGuid);
-                if (objTemp != null)
-                {
-                    Layer vesselConstructionTemp = doc.Layers.FindName(layerBlockViewsName);
-                    // Assign the Brep to the "vesselConstruction" layer
-                    objTemp.Attributes.LayerIndex = vesselConstructionTemp.Index;
-                    objTemp.Attributes.Name = "blockVoews";
-                    vesselConstructionTemp.IsLocked = true;
-
-                    if (block.Name.Equals("sideViewMittelplateBlock"))
-                    {
-                        // move the block to the right 
-                        Transform moveRight = Transform.Translation(new Vector3d(0, mittelplate.VesselsHollBreadth/2, 0));
-                        doc.Objects.Transform(objGuid, moveRight, true); // `true` = delete original
-                    }
-                    // Commit changes to the object
-                    objTemp.CommitChanges();
-                }
-            }
-
-
-
-            // Lock the layer AFTER all objects are assigned
-            vesselConstructionLayer.IsVisible = false;
-            vesselConstructionLayer.IsLocked = false;
+           drawBlockViews(doc);
+           
 
             // Create the "TD" layer if it doesn't exist
             string layerTDName = "TD";
@@ -150,7 +96,6 @@ namespace MyRhinoPlugin1.commands
             Layer vesselTDLayer = service.LayerService.GetOrCreateLayer(doc, layerTDName);
             // Set the layer visibility to off
             vesselTDLayer.IsVisible = true;
-            vesselTDLayer.IsLocked = true;
             List<TDModel> TDList = new List<TDModel>();
             TDObjectCreator tDObjectCreator = new TDObjectCreator();
             TDList = tDObjectCreator.TDBrepCreator(mittelplate.TDList);
@@ -169,23 +114,17 @@ namespace MyRhinoPlugin1.commands
                     objTemp.Attributes.LayerIndex = vesselTDLayerTemp.Index;
                     objTemp.Attributes.Name = tD.Name;
                     mittelplate.TDInitialPositionPointList.Add(tD.Name, tD.LocationOfPosition);
+                   
                     // Commit changes to the object
                     objTemp.CommitChanges();
                     doc.Views.Redraw();
                     RhinoDoc.ActiveDoc.Views.Redraw();
 
-
-                  
                 }
             }
 
-
             
-
-
-      
- 
-            doc.Views.Redraw();
+           
 
             foreach (var v in doc.Views.GetViewList(true, false))
             {
@@ -198,47 +137,74 @@ namespace MyRhinoPlugin1.commands
             CollisionGuard.Enable();
             GravityWatcher.Enable();
             userInterface.CustomRhinoToolsBarInterface.CustomAllPannels(doc);
+            var topView = doc.Views.Find(CustomViewportLayoutCommand.TopViewName, false);
+            var sideView = doc.Views.Find(CustomViewportLayoutCommand.SideViewName, false);
+            var fwdView = doc.Views.Find(CustomViewportLayoutCommand.FwdViewName, false);
+
+            var layerSadeView = doc.Layers.FindName(sideViewMittelplateBlockName);
+            layerSadeView.SetPerViewportVisible(topView.ActiveViewportID, false);
+            layerSadeView.SetPerViewportVisible(fwdView.ActiveViewportID, false);
+
+            var layerFwdView = doc.Layers.FindName(FwdViewMittelplateBlockName);
+            layerFwdView.SetPerViewportVisible(sideView.ActiveViewportID, false);
+            layerFwdView.SetPerViewportVisible(topView.ActiveViewportID, false);
+
+            var layerTopView = doc.Layers.FindName(topViewMittelplateBlockName);
+            layerTopView.SetPerViewportVisible(sideView.ActiveViewportID, false);
+            layerTopView.SetPerViewportVisible(fwdView.ActiveViewportID, false);
+
 
             _mouseListener = new CrossSectionMouseListener();
             _mouseListener.Enabled = true;
             // Set the singleton instance of DataModelHolder
             DataModelHolder.Instance.Vessel = mittelplate;
+            doc.Views.Redraw();
             return Result.Success;
         }
 
 
 
-        private List<InstanceDefinition> drawBlockViews(RhinoDoc doc)
+        private void drawBlockViews(RhinoDoc doc)
         {
-            var resultList = new List<InstanceDefinition>();
-
             string viewFileName = "viewsMittelplateBlock.3dm";
-
-            var blockNames = new[]
+            Layer sideBlockViewsLayer = service.LayerService.GetOrCreateLayer(doc, sideViewMittelplateBlockName);
+            sideBlockViewsLayer.IsLocked = true;  
+            Layer topBlockViewsLayer = service.LayerService.GetOrCreateLayer(doc, topViewMittelplateBlockName);
+            topBlockViewsLayer.IsLocked = true;
+            Layer fwdBlockViewsLayer = service.LayerService.GetOrCreateLayer(doc, FwdViewMittelplateBlockName);
+            fwdBlockViewsLayer.IsLocked = true;
+            Dictionary <Layer, InstanceDefinition > blocksViews = new Dictionary<Layer, InstanceDefinition>
             {
-        "sideViewMittelplateBlock",
-        "topViewMittelplateBlock",
-        "FwdViewMittelplateBlock"
-    };
-            
+                { sideBlockViewsLayer, OpenFilesWithBlockController.OpenFilesWithBlock(doc, viewFileName, sideViewMittelplateBlockName) },
+                { topBlockViewsLayer, OpenFilesWithBlockController.OpenFilesWithBlock(doc, viewFileName, topViewMittelplateBlockName) },
+                { fwdBlockViewsLayer, OpenFilesWithBlockController.OpenFilesWithBlock(doc, viewFileName, FwdViewMittelplateBlockName) }
+            };
 
-            foreach (var blockName in blockNames)
+            foreach(Layer layer in blocksViews.Keys)
             {
-                var block = OpenFilesWithBlockController.OpenFilesWithBlock(doc, viewFileName, blockName);
-                if (block != null)
-                { 
-                    resultList.Add(block);
-                
-                   
-                   
-                }
-                else
-                {
-                    RhinoApp.WriteLine($"Failed to load block: {blockName}");
-                }
-            }
+                InstanceDefinition tempBlock = blocksViews[layer];
+                Guid objGuid = doc.Objects.AddInstanceObject(tempBlock.Index, Transform.Identity);
+                RhinoObject objTemp = doc.Objects.Find(objGuid);
+                if (objTemp != null)
+                {    
+                    Layer layerTemp = doc.Layers.FindName(layer.Name);
+                    // Assign the Brep to the "vesselConstruction" layer
+                    objTemp.Attributes.LayerIndex = layerTemp.Index;
+                    objTemp.Attributes.Name = layer.Name;
+                    layerTemp.IsLocked = true;
+                    objTemp.CommitChanges();
 
-            return resultList;
+
+
+                    if (layer.Name.Equals(sideViewMittelplateBlockName))
+                    {
+                        // move the block to the right 
+                        Transform moveRight = Transform.Translation(new Vector3d(0, mittelplate.VesselsHollBreadth / 2, 0));
+                        doc.Objects.Transform(objGuid, moveRight, true); // `true` = delete original
+                    }
+                     
+                } 
+            } 
         }
 
 

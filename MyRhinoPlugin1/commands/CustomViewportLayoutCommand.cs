@@ -107,6 +107,8 @@ namespace MyRhinoPlugin1.commands
             }
 
 
+            
+          
             foreach (var view in doc.Views)
             {
                 RhinoApp.WriteLine($" - {view.ActiveViewport.Name}");

@@ -5,6 +5,7 @@ using Rhino;
 using System;
 using System.Collections.Generic;
 using MyRhinoPlugin1.models;
+using System.Xml.Linq;
 
 namespace MyRhinoPlugin1.commands
 {
@@ -27,14 +28,13 @@ namespace MyRhinoPlugin1.commands
 
         protected override Result RunCommand(RhinoDoc doc, RunMode mode)
         {
-
-
             // create rendom cargo <CargoModel>
             List<CargoModel> cargoList = new List<CargoModel>();
             for (int i = 0; i < 3; i++)
             {
                 cargoList.Add(new CargoModel()
                 {
+                    // create a random cargo
                     Weight = 8000,
                     Length = 5300,
                     Width = 3500,
@@ -45,21 +45,32 @@ namespace MyRhinoPlugin1.commands
             }
 
 
+            data.DataModelHolder.Instance.CargoList = cargoList;
 
 
-            
-           data.DataModelHolder.Instance.CargoList = cargoList;
+            // Create a new layer for the cargo
+            string layerName = "CargoLayer";
+            Layer cargoLayer = doc.Layers.FindName(layerName);
+            if (cargoLayer == null)
+            {
+                cargoLayer = new Layer
+                {
+                    Name = layerName,
+                    IsVisible = true,
+                    IsLocked = false
+                };
+                doc.Layers.Add(cargoLayer);
+            }
 
 
 
-            List<Brep> cargoCollection = new List<Brep>();
 
             //find the vesselConstruction item in the drawing end get it base point
             Point3d basePoint = new Point3d(0, 0, 0);
 
             foreach (var item in doc.Objects)
             {
-             if (item.Name == "vesselConstruction")  
+                if (item.Name == "vesselConstruction")
 
                 {
                     if (item.Geometry is Brep brep)
@@ -70,8 +81,9 @@ namespace MyRhinoPlugin1.commands
                     }
                 }
             }
+
             // Offset the base point in Y direction
-            basePoint = new Point3d(basePoint.X, basePoint.Y + -5000, basePoint.Z); 
+            basePoint = new Point3d(basePoint.X, basePoint.Y + -5000, basePoint.Z);
 
 
             foreach (var cargo in cargoList)
@@ -90,64 +102,40 @@ namespace MyRhinoPlugin1.commands
 
                     // Move the origin for the next box (if needed)
                     basePoint.X += cargo.Length + 1000; // Offset boxes in X direction
-                    // make a rendom color for the box
-      
-               
-                   
-                 
+                                                        // make a rendom color for the box
 
-                    // Create and add the Brep representation of the box to the document
-                    cargoCollection.Add(box.ToBrep());
-                }
+
+
+                    Guid objGuid = doc.Objects.AddBrep(box.ToBrep());
+                    // Get the RhinoObject associated with the Guid
+                    RhinoObject obj = doc.Objects.Find(objGuid);
+                    if (obj != null)
+                    {
+                        Layer cargoLayerTemp = doc.Layers.FindName("CargoLayer");
+                        // Assign the Brep to the "CargoLayer" layer
+                        obj.Attributes.LayerIndex = cargoLayerTemp.Index;
+                        obj.Attributes.Name = cargo.Name;
+
+                        // Create a random color
+                        Random random = new Random();
+                        int r = random.Next(0, 256);
+                        int g = random.Next(0, 256);
+                        int b = random.Next(0, 256);
+                        System.Drawing.Color randomColor = System.Drawing.Color.FromArgb(r, g, b);
+                        // Set the color of the box
+                        obj.Attributes.ObjectColor = randomColor;
+                        obj.Attributes.ColorSource = ObjectColorSource.ColorFromObject;
+                        obj.Attributes.UserDictionary.Set("CargoName", cargo.Name);
+                        obj.Attributes.UserDictionary.Set("Weight", cargo.Weight);
+                        obj.Attributes.UserDictionary.Set("Length", cargo.Length);
+                        obj.Attributes.UserDictionary.Set("Width", cargo.Width);
+                        obj.Attributes.UserDictionary.Set("Height", cargo.Height);
+                        // Commit changes to the object
+                        obj.CommitChanges(); 
+
+                    }
+                } 
             }
-
-
-
-
-
-            // Create a new layer for the cargo
-            string layerName = "CargoLayer";
-            Layer cargoLayer = doc.Layers.FindName(layerName);
-            if (cargoLayer == null)
-            {
-                cargoLayer = new Layer
-                {
-                    Name = layerName,
-                    IsVisible = true,
-                    IsLocked = false
-                };
-                doc.Layers.Add(cargoLayer);
-            }
-            // Add the cargo Breps to the document and assign them to the new layer
-
-     
-            foreach (Brep cargoBrep in cargoCollection)
-            {
-                // Add the Brep to the document and get the Guid of the object
-                Guid objGuid = doc.Objects.AddBrep(cargoBrep);
-                // Get the RhinoObject associated with the Guid
-                RhinoObject obj = doc.Objects.Find(objGuid);
-                if (obj != null)
-                {
-                    Layer cargoLayerTemp = doc.Layers.FindName("CargoLayer");
-                    // Assign the Brep to the "CargoLayer" layer
-                    obj.Attributes.LayerIndex = cargoLayerTemp.Index;
-                    obj.Attributes.Name = "CargoUnit";
-
-                    // Create a random color
-                    Random random = new Random();
-                    int r = random.Next(0, 256);
-                    int g = random.Next(0, 256);
-                    int b = random.Next(0, 256);
-                    System.Drawing.Color randomColor = System.Drawing.Color.FromArgb(r, g, b);
-                    // Set the color of the box
-                    obj.Attributes.ObjectColor = randomColor;
-                    obj.Attributes.ColorSource = ObjectColorSource.ColorFromObject;
-                    // Commit changes to the object
-                    obj.CommitChanges();
-                }
-            }
-
             doc.Views.Redraw();
             RhinoApp.WriteLine("Packing list imported successfully.");
             RhinoDoc.ActiveDoc.Views.Redraw();
