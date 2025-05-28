@@ -130,6 +130,8 @@ namespace MyRhinoPlugin1.commands
                         obj.Attributes.UserDictionary.Set("Length", cargo.Length);
                         obj.Attributes.UserDictionary.Set("Width", cargo.Width);
                         obj.Attributes.UserDictionary.Set("Height", cargo.Height);
+                        obj.Attributes.SetUserString("qwerty", "123");
+
                         // Commit changes to the object
                         obj.CommitChanges(); 
 

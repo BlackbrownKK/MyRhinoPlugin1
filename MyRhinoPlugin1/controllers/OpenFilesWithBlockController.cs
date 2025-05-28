@@ -17,6 +17,7 @@ namespace MyRhinoPlugin1.controllers
     {
 
 
+        
         public static InstanceDefinition OpenFilesWithBlock(RhinoDoc doc, string fileName, string blockName)
         {
             string projectRoot = Directory.GetParent(Directory.GetCurrentDirectory()).Parent.Parent.FullName;

@@ -17,8 +17,9 @@ namespace MyRhinoPlugin1.behavior.visualView
 {
     public class PermanentSideViewClippingPlane
     {
+        //to delete this class!
+        //to delete this class!
 
-        
 
         public void SideClippingPlaneMaker(double YDist)
         {
