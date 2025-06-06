@@ -5,7 +5,7 @@ namespace MyRhinoPlugin1.models
 {
     public class VesselModel
     {
-
+        public string VesselName { get; set; }
         public Point3d APPoint { get; set; }
         public Point3d FPPoint { get; set; }
 

@@ -31,6 +31,7 @@ namespace MyRhinoPlugin1.vesselsDigitalModels
 
         public Mittelplate()
         {
+            VesselName = "Mittelplate-type";
             APPoint = new Point3d(0, 0, 0);
             FPPoint = new Point3d(82420, 0, 0);
             CargoHoldBasePont = new Point3d(13900, 0, 950);
