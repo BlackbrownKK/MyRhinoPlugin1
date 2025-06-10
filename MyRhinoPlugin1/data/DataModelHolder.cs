@@ -13,7 +13,7 @@ namespace MyRhinoPlugin1.data
     {
         
         private static DataModelHolder _instance;
-        private VesselModel vessel;
+        public VesselModel vessel;
         private List<CargoModel> cargoList;
         public static string CompamnyName { get; set; }
         public static string VesselName { get; set; }

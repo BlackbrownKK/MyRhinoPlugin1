@@ -26,6 +26,9 @@ namespace MyRhinoPlugin1.commands.layout
         private string frameBlockName = "frameBrieseChartering";
         private string viewFileName = "frameBrieseChartering.3dm";
         private string frameLayerName = "frameBrieseChartering";
+        double TT_Z;
+        double TD_Z;
+
         public Dictionary<String, String>  textLoyoutAttributes { get; private set; }
 
         public LayoutMaker()
@@ -61,7 +64,7 @@ namespace MyRhinoPlugin1.commands.layout
                 RhinoApp.WriteLine($"Block '{frameBlockName}' not found in file '{viewFileName}'.");
                 return Result.Failure;
             }
-            Layer frameLayer = service.LayerService.GetOrCreateLayer(doc, frameLayerName);
+            Layer frameLayer = LayerService.GetOrCreateLayer(doc, frameLayerName);
             frameLayer.IsLocked = true;
             Guid objGuid = doc.Objects.AddInstanceObject(frame.Index, Transform.Identity);
             RhinoObject objTemp = doc.Objects.Find(objGuid);
@@ -86,7 +89,8 @@ namespace MyRhinoPlugin1.commands.layout
             int ViewheightTop = 35;
 
 
-
+            // Refresh the layout view 
+            textUpdator(doc);
 
             // start /////////////////////////////////////////////
 
@@ -126,6 +130,42 @@ namespace MyRhinoPlugin1.commands.layout
                 detailSide.CommitChanges();          // Commits object-level changes
             }
 
+            ///////////////////////////////////////////// FWR ///////////////////////////////////////////////
+            Point2d pointAFWD = new Point2d(pointBSide.X + tip, YLeftUpStart);
+            Point2d pointBFWD = new Point2d(pointBSide.X + tip + ViewLength / 4, YLeftUpStart - ViewheightSide);
+            var detailFWR = pageView.AddDetailView("fwr view", pointAFWD, pointBFWD, DefinedViewportProjection.Left);
+
+            if (detailFWR != null)
+            {
+                layerVesselConstruction.SetPerViewportVisible(detailFWR.Id, false);
+                layerSideViewMittelplateBlock.SetPerViewportVisible(detailFWR.Id, false);
+                layerTopViewMittelplateBlock.SetPerViewportVisible(detailFWR.Id, false);
+
+                var attr = detailFWR.Attributes;
+                attr.Name = "fwr view";
+                attr.ObjectColor = System.Drawing.Color.White;
+                attr.ColorSource = ObjectColorSource.ColorFromObject;
+                doc.Objects.ModifyAttributes(detailFWR.Id, attr, true);
+                detailFWR.Viewport.DisplayMode = DisplayModeDescription.FindByName("Shaded");
+                detailFWR.CommitViewportChanges();  // Commits viewport-related changes (like zoom, mode)
+                detailFWR.CommitChanges();          // Commits object-level changes
+
+
+
+
+            }
+
+            if (_formInstance == null || !_formInstance.Visible)
+            {
+                _formInstance = new TextLayoutEditor();
+                _formInstance.Closed += (s, e) => _formInstance = null; // Clear ref on close
+                _formInstance.Show(); // Use ShowModal() if blocking is needed
+
+            }
+            else
+            {
+                RhinoApp.WriteLine("The UI is already open.");
+            }
 
             ///////////////////////////////////////////// WD /////////////////////////////////////////////
             Point2d pointATopWD = new Point2d(XLeftoutreach, pointBSide.Y - tip);
@@ -162,20 +202,64 @@ namespace MyRhinoPlugin1.commands.layout
                 layerSideViewMittelplateBlock.SetPerViewportVisible(detailTD.Id, false);
                 layerFwdViewMittelplateBlock.SetPerViewportVisible(detailTD.Id, false);
 
-               
-                var attr = detailTD.Attributes;
-                attr.Name = "TD view";
-                attr.ObjectColor = System.Drawing.Color.White;
-                attr.ColorSource = ObjectColorSource.ColorFromObject;
-                doc.Objects.ModifyAttributes(detailTD.Id, attr, true);
-                detailTD.Viewport.DisplayMode = DisplayModeDescription.FindByName("Shaded");
-                detailTD.CommitViewportChanges();  // Commits viewport-related changes (like zoom, mode)
-                detailTD.CommitChanges();          // Commits object-level changes
-            }
+                pageView.SetActiveDetail(detailTD.Id); // 🔥 Activate the detail
+                  TD_Z = DataModelHolder.ve.TD_Z;
+                Plane plane = new Plane(new Point3d(55000, 0, TD_Z), new Vector3d(0, 0, -100));
+                if (!plane.IsValid)
+                {
+                    RhinoApp.WriteLine("Plane is invalid");
+                }
+                var planeWidth = 5000;
+                var planeHeight = 5000;
+                // Add clipping plane object
+                Guid clippingPlaneId = doc.Objects.AddClippingPlane(plane, planeWidth, planeHeight, new List<Guid> { detailTD.Viewport.Id });
+
+                // Associate it with your layout detail
+                if (clippingPlaneId != Guid.Empty)
+                {
+
+                    // Retrieve using FindId instead of Find
+                    var rhClippingPlaneObj = doc.Objects.FindId(clippingPlaneId) as ClippingPlaneObject;
+
+                    if (rhClippingPlaneObj != null)
+                    {
+                        var attr = detailTD.Attributes;
+                        attr.Name = "TD view";
+                        attr.ObjectColor = System.Drawing.Color.White;
+                        attr.ColorSource = ObjectColorSource.ColorFromObject;
+                        doc.Objects.ModifyAttributes(detailTD.Id, attr, true);
+
+                        detailTD.Viewport.DisplayMode = DisplayModeDescription.FindByName("Shaded");
+                        rhClippingPlaneObj.AddClipViewport(detailTD.Viewport, true);
+                        doc.Objects.Select(clippingPlaneId);
+                        doc.Views.Redraw();
+                        doc.Objects.UnselectAll();
+                        rhClippingPlaneObj.CommitChanges();
+                        detailTD.CommitViewportChanges();      // ✅ Commit changes
+                        pageView.SetPageAsActive();            // (Optional) Return to layout
+                                                               // move rhClippingPlaneObj x +=100
+                        var xform = Transform.Translation(100, 0, 0);
+                        doc.Objects.Transform(clippingPlaneId, xform, true);
+
+                        RhinoApp.WriteLine("Added and activated clipping plane for TT view.");
+
+                    }
+                    else
+                    {
+                        RhinoApp.WriteLine("rhino ClippingPlane Object was not found.");
+                    }
+
+                }
+                else
+                {
+                    RhinoApp.WriteLine("Clipping plane ID object was not found.");
+                }
+
+            } 
 
 
-            ///////////////////////////////////////////// TT /////////////////////////////////////////////
-            Point2d pointATopTT = new Point2d(XLeftoutreach, pointBTopTD.Y - tip);
+        ///////////////////////////////////////////// TT /////////////////////////////////////////////
+        Point2d pointATopTT = new Point2d(XLeftoutreach, pointBTopTD.Y - tip);
             Point2d pointBTopTT = new Point2d(XLeftoutreach + ViewLength, pointBTopTD.Y - tip - ViewheightTop);
             var detailTT = pageView.AddDetailView("TT view", pointATopTT, pointBTopTT, DefinedViewportProjection.Top);
             if (detailTT != null)
@@ -186,8 +270,8 @@ namespace MyRhinoPlugin1.commands.layout
 
              
                 pageView.SetActiveDetail(detailTT.Id); // 🔥 Activate the detail
-                double z = 4000;
-                Plane plane = new Plane(new Point3d(55000, 0, z), new Vector3d(0, 0, -100));
+                  TT_Z = 4000;
+                Plane plane = new Plane(new Point3d(55000, 0, TT_Z), new Vector3d(0, 0, -100));
                 if (!plane.IsValid)
                 {
                     RhinoApp.WriteLine("Plane is invalid");
@@ -200,6 +284,7 @@ namespace MyRhinoPlugin1.commands.layout
                 // Associate it with your layout detail
                 if (clippingPlaneId != Guid.Empty)
                 {
+
                     // Retrieve using FindId instead of Find
                     var rhClippingPlaneObj = doc.Objects.FindId(clippingPlaneId) as ClippingPlaneObject;
 
@@ -218,8 +303,11 @@ namespace MyRhinoPlugin1.commands.layout
                         doc.Objects.UnselectAll();
                         rhClippingPlaneObj.CommitChanges();
                         detailTT.CommitViewportChanges();      // ✅ Commit changes
-                        //pageView.SetPageAsActive();            // (Optional) Return to layout
-                     
+                        pageView.SetPageAsActive();            // (Optional) Return to layout
+                                                               // move rhClippingPlaneObj x +=100
+                        var xform = Transform.Translation(100, 0, 0);
+                        doc.Objects.Transform(clippingPlaneId, xform, true);
+
                         RhinoApp.WriteLine("Added and activated clipping plane for TT view.");
                       
                     }
@@ -237,49 +325,13 @@ namespace MyRhinoPlugin1.commands.layout
             }
 
 
-            ///////////////////////////////////////////// FWR ///////////////////////////////////////////////
-            Point2d pointAFWD = new Point2d(pointBSide.X + tip, YLeftUpStart);
-            Point2d pointBFWD = new Point2d(pointBSide.X + tip + ViewLength/4, YLeftUpStart - ViewheightSide);
-            var detailFWR =  pageView.AddDetailView("fwr view", pointAFWD, pointBFWD, DefinedViewportProjection.Left);
-
-            if (detailFWR != null)
-            {
-                layerVesselConstruction.SetPerViewportVisible(detailFWR.Id, false);
-                layerSideViewMittelplateBlock.SetPerViewportVisible(detailFWR.Id, false);
-                layerTopViewMittelplateBlock.SetPerViewportVisible(detailFWR.Id, false);
-
-                var attr = detailFWR.Attributes;
-                attr.Name = "fwr view";
-                attr.ObjectColor = System.Drawing.Color.White;
-                attr.ColorSource = ObjectColorSource.ColorFromObject;
-                doc.Objects.ModifyAttributes(detailFWR.Id, attr, true);
-                detailFWR.Viewport.DisplayMode = DisplayModeDescription.FindByName("Shaded");
-                detailFWR.CommitViewportChanges();  // Commits viewport-related changes (like zoom, mode)
-                detailFWR.CommitChanges();          // Commits object-level changes
-
-
-
-                
-            }
-
-            if (_formInstance == null || !_formInstance.Visible)
-            {
-                _formInstance = new TextLayoutEditor();
-                _formInstance.Closed += (s, e) => _formInstance = null; // Clear ref on close
-                _formInstance.Show(); // Use ShowModal() if blocking is needed
-
-            }
-            else
-            {
-                RhinoApp.WriteLine("The UI is already open.");
-            }
+    
 
 
 
 
 
-            // Refresh the layout view 
-            textUpdator(doc);
+           
           
             return Result.Success;
         }

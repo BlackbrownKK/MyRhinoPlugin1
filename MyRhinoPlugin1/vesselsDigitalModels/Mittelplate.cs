@@ -31,6 +31,7 @@ namespace MyRhinoPlugin1.vesselsDigitalModels
 
         public Mittelplate()
         {
+
             VesselName = "Mittelplate-type";
             APPoint = new Point3d(0, 0, 0);
             FPPoint = new Point3d(82420, 0, 0);
@@ -65,6 +66,9 @@ namespace MyRhinoPlugin1.vesselsDigitalModels
             TDAltitudeUpperPosition = 4680;
             firstOffset = 36;
             offset = 15;
+            // Set the altitude positions for TDs 
+            TD_Z = 8000;
+            TT_Z = 4000;
 
             // Create a list of Brep objects for the TDs
 

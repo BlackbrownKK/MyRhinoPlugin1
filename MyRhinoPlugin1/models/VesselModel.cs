@@ -8,6 +8,8 @@ namespace MyRhinoPlugin1.models
         public string VesselName { get; set; }
         public Point3d APPoint { get; set; }
         public Point3d FPPoint { get; set; }
+        public double TT_Z { get; set; }
+        public double TD_Z { get; set; }
 
         public Point3d CargoHoldBasePont { get; set; }
         public double CargoHoldLength { get; set; }
